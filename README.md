@@ -12,3 +12,9 @@ python3 glove.py
 
 And finally:
 python3 tweet_svm.py
+
+If you change glove.py, make sure you go into tweet_svm.py and change
+
+clf = TweetClassifier(embeddingsX='embeddingsX_K200_step0.001_epochs10.npy')
+
+s.t. it loads the correct embeddings.

@@ -8,7 +8,7 @@ except:
 
 class TweetClassifier:
     
-    clf_path = Path('svc_classifier.pkl')
+    clf_path = Path('classifier.pkl')
     
     def __init__(self,vocab='vocab.pkl',embeddingsX='embeddingsX_K200_step0.001_epochs10.npy',
                  debug=False):
@@ -40,6 +40,24 @@ class TweetClassifier:
             rep /= c
         
         return rep
+    
+    def _load_training_data(self,pos,neg,encoding="utf8"):
+        with open(pos, encoding=encoding) as fpos:
+            tweets_pos = fpos.readlines()
+            
+        with open(neg, encoding=encoding) as fneg:
+            tweets_neg = fneg.readlines()
+        
+        print("representing training data...")
+        tweets_pos = [self.representation(tweet) for tweet in tweets_pos]
+        results_pos = [1]*len(tweets_pos)
+        tweets_neg = [self.representation(tweet) for tweet in tweets_neg]
+        results_neg = [-1]*len(tweets_neg)
+        
+        train_x = np.concatenate((tweets_pos,tweets_neg))
+        train_y = np.concatenate((results_pos,results_neg))
+        
+        return train_x, train_y
     
     def train(self,pos,neg,encoding="utf8"):
         pass

@@ -4,10 +4,12 @@ import csv
 
 test='twitter-datasets/test_data.txt'
 header=['Id','Prediction']
-out='submission_clustered.csv'
+out='submission.csv'
 
-#clf = SVM_TweetClassifier()
-clf = ClusterClassifier()
+clf = SVM_TweetClassifier()
+
+#out='submission_clustered.csv'
+#clf = ClusterClassifier()
 
 with open(test,mode='r',encoding="utf8",newline='') as testfile:
     ## not this time ##next(testfile)  # skip header

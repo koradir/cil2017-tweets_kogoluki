@@ -80,8 +80,9 @@ class ClusterClassifier(TweetClassifier):
     def predict(self,tweet):
         if self._clf is None:
             if not self._load_clf():
-                self.__cent_pos, self.__cent_neg = self._clf
                 return np.NaN
+            else:
+                self.__cent_pos, self.__cent_neg = self._clf
         
         rep = self.representation(tweet)
         

@@ -43,7 +43,7 @@ class SVM_TweetClassifier(TweetClassifier):
             if not self._load_clf():
                 return np.NaN
                 
-        return self._clf.predict(self.representation(tweet).reshape(1,-1))
+        return self._clf.predict(self.representation(tweet).reshape(1,-1))[0]
 
 if __name__ == '__main__':
     datafolder = 'twitter-datasets'

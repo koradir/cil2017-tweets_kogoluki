@@ -3,7 +3,7 @@ import csv
 
 test='twitter-datasets/test_data.txt'
 header=['Id','Prediction']
-out='submission.csv'
+out='submission_clustered.csv'
 
 clf = SVM_TweetClassifier()
 

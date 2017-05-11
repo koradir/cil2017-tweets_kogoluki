@@ -14,6 +14,12 @@ Original implementation by github user "luizgh" for theano + lasagne
 was ported to TensorFlow by user "RikHeijdens", who published the code 
 March 31 2017 on 
 https://github.com/tensorflow/tensorflow/issues/6011#issuecomment-290720367
+
+It was only slightly modified because RikHeijdens seems to be using a different 
+version of tensorflow.
+For tensorflow 1.1.0:
+    tf.mul needed to be renamed to tf.multiply
+    tf.concat(1, pool_list) needed to be rewritten tf.concat(pool_list,1)
 """
 
 import tensorflow as tf
@@ -61,13 +67,13 @@ def max_pool_2d_nxn_regions(inputs, output_size: int, mode: str):
     for row in range(output_size):
         for col in range(output_size):
             # start_h = floor(row / n * h)
-            start_h = tf.cast(tf.floor(tf.mul(tf.divide(row, n), tf.cast(h, tf.float32))), tf.int32)
+            start_h = tf.cast(tf.floor(tf.multiply(tf.divide(row, n), tf.cast(h, tf.float32))), tf.int32)
             # end_h = ceil((row + 1) / n * h)
-            end_h = tf.cast(tf.ceil(tf.mul(tf.divide((row + 1), n), tf.cast(h, tf.float32))), tf.int32)
+            end_h = tf.cast(tf.ceil(tf.multiply(tf.divide((row + 1), n), tf.cast(h, tf.float32))), tf.int32)
             # start_w = floor(col / n * w)
-            start_w = tf.cast(tf.floor(tf.mul(tf.divide(col, n), tf.cast(w, tf.float32))), tf.int32)
+            start_w = tf.cast(tf.floor(tf.multiply(tf.divide(col, n), tf.cast(w, tf.float32))), tf.int32)
             # end_w = ceil((col + 1) / n * w)
-            end_w = tf.cast(tf.ceil(tf.mul(tf.divide((col + 1), n), tf.cast(w, tf.float32))), tf.int32)
+            end_w = tf.cast(tf.ceil(tf.multiply(tf.divide((col + 1), n), tf.cast(w, tf.float32))), tf.int32)
             pooling_region = inputs[:, start_h:end_h, start_w:end_w, :]
             pool_result = pooling_op(pooling_region, axis=(1, 2))
             result.append(pool_result)
@@ -139,4 +145,4 @@ def spatial_pyramid_pool(inputs, dimensions=[2,1], mode='max', implementation='k
                                          strides=[1, sh, sw, 1],
                                          padding='SAME')
             pool_list.append(tf.reshape(pool_result, [tf.shape(inputs)[0], -1]))
-    return tf.concat(1, pool_list)
+    return tf.concat(pool_list,axis=1)

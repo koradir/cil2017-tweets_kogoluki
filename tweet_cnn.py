@@ -23,6 +23,8 @@ try:
    import cPickle as pickle
 except:
    import pickle
+   
+import os
 
 from SpatialPyramidPooling import spatial_pyramid_pool
 from pathlib import Path
@@ -31,25 +33,52 @@ from PARAMS import CNN_PARAMS as PARAMS
 
 class CNN_TweetClassifier:
     
-    clf_path = Path('cnn_classifier.pkl')
-    
-    def __init__(self,vocab='vocab.pkl',debug=False):
+    def __init__(self,
+                 vocab='vocab.pkl',  # saved dictionary (word -> word number)
+                 save_as='cnn_classifier.ckpt',  # save to this file
+                 saved_model='cnn_classifier.ckpt',  # set to None to discard saved model
+                 debug=False
+                 ):
         
         self.debug = debug
         
+        """LOAD VOCABULARY"""
         self.vocab = {}
         with open(vocab,'rb') as f:
             self.vocab = pickle.load(f)
         print("vocabulary loaded")
-        # note: is a dictonary (word -> word number)        
         
-        self._clf = None
-        
+        """BUILD MODEL"""
         self.model = None
-        self._tf_train_step = None
-        self._tf_accuracy = None
+        self._train_step = None
+        self._accuracy = None
+        self._tf_variables = []
         
+        '''closing a session does not get rid of legacy stuff'''
+        tf.reset_default_graph()
+        
+        '''builds graph and initialises above variables'''
         self._model()
+        
+        """INITIALISE TF VARIABLES"""
+        model_restorable = (
+                saved_model is not None
+                and os.path.exists(f'{saved_model}.index')
+                )
+            
+        
+        if self.debug:
+            print('restore from file: {0}'.format('yes' if model_restorable else 'no'))
+        
+        self.session = tf.Session()
+        
+        saver = tf.train.Saver(self._tf_variables)
+        with self.session as sess:
+            if model_restorable:
+                saver.restore(sess,saved_model)
+            else:
+                tf.global_variables_initializer().run()
+                saver.save(sess,save_as,write_meta_graph=False) 
         
     def _model(self):
         '''Like in Kim's "Convolutional Neural Network for Sentence Classification",
@@ -79,29 +108,35 @@ class CNN_TweetClassifier:
             '''
             return tf.nn.conv2d(x,W,strides=[1,1,1,1],padding ='SAME')
         
-        def weight_variable(shape):
+        def weight_variable(shape,name):
             '''
             Initialise weights with a small amount of noise for symmetry breaking
             '''
             initial = tf.truncated_normal(shape,stddev=0.1)
-            return tf.Variable(initial)
+            v = tf.Variable(initial,name=name)
+            self._tf_variables.append(v)
+            return v
         
-        def bias_variable(shape):
+        def bias_variable(shape,name):
             '''
             Initialise biases slightly positive to avoid "dead" neurons.
             '''
             initial = tf.constant(0.1,shape=shape)
-            return tf.Variable(initial)
+            v = tf.Variable(initial,name=name)
+            self._tf_variables.append(v)
+            return v
         
-        def EmbeddingVariable(shape):
+        def EmbeddingVariable(shape,name):
             initial = tf.truncated_normal(shape)
-            return tf.Variable(initial)
+            v = tf.Variable(initial,name=name)
+            self._tf_variables.append(v)
+            return v
         
         x_input = tf.placeholder(tf.int32, shape=[PARAMS.batch_size, None])  # lists of tokens
         y_input = tf.placeholder(tf.int32, shape=[PARAMS.batch_size, PARAMS.nof_classes])  # expect one-hot
         
         """EMBEDDING"""
-        embeddings = EmbeddingVariable([len(self.vocab), PARAMS.dim_embeddings])
+        embeddings = EmbeddingVariable([len(self.vocab), PARAMS.dim_embeddings],'embeddings')
         
         h_embed = tf.nn.embedding_lookup(embeddings,x_input)
         # note: h_embed has dimensions batch_size x sentence_length x dim_embeddings
@@ -115,8 +150,8 @@ class CNN_TweetClassifier:
         nof_features = PARAMS.conv1_feature_count
         pooled = []
         for f in filter_sizes:
-            W_conv1f = weight_variable([f,f,1,nof_features])
-            b_conv1f = bias_variable([nof_features])
+            W_conv1f = weight_variable([f,f,1,nof_features],f'W_conv1_{f}')
+            b_conv1f = bias_variable([nof_features],f'b_conv1_{f}')
             h_conv1f = tf.nn.relu(conv2d(h_embed,W_conv1f) + b_conv1f)
             h_spp1f = spatial_pyramid_pool(h_conv1f,PARAMS.SPP_dimensions)
             
@@ -141,8 +176,8 @@ class CNN_TweetClassifier:
         """FULLY-CONNECTED LAYER with dropout"""
         nof_inputs = len(PARAMS.gram_sizes) * PARAMS.SPP_output_shape[1]
         
-        W_fc1 = weight_variable([nof_inputs,PARAMS.nof_neurons])
-        b_fc1 = bias_variable([PARAMS.nof_neurons])
+        W_fc1 = weight_variable([nof_inputs,PARAMS.nof_neurons],'W_fc1')
+        b_fc1 = bias_variable([PARAMS.nof_neurons],'b_fc1')
         
         h_fc1 = tf.nn.relu(tf.matmul(h_conv1,W_fc1) + b_fc1)
         
@@ -154,8 +189,8 @@ class CNN_TweetClassifier:
         
         
         """READOUT LAYER"""
-        W_fc2 = weight_variable([PARAMS.nof_neurons,PARAMS.nof_classes])
-        b_fc2 = bias_variable([PARAMS.nof_classes])
+        W_fc2 = weight_variable([PARAMS.nof_neurons,PARAMS.nof_classes],'W_fc2')
+        b_fc2 = bias_variable([PARAMS.nof_classes],'b_fc2')
         
         h_fc2 =tf.nn.relu(tf.matmul(h_fc1_drop,W_fc2) + b_fc2)
         
@@ -173,6 +208,7 @@ class CNN_TweetClassifier:
                     PARAMS.batch_size,
                     PARAMS.nof_classes
                     )
+            print('')
         
         
         """LOSS"""
@@ -181,19 +217,32 @@ class CNN_TweetClassifier:
                         logits=y, labels=y_input )
                 )
         
-        self.train_step = tf.train.AdamOptimizer(PARAMS.adam_learning_rate).minimize(loss)
+        self._train_step = tf.train.AdamOptimizer(PARAMS.adam_learning_rate).minimize(loss)
         
         
         """ACCURACY"""
         correct_prediction = tf.equal(tf.argmax(y,1), tf.argmax(y_input,1))
-        self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+        self._accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
     
+    def _representation(self,tweet):
+        tokens = [self.vocab.get(t, -1) for t in tweet.strip().split()]
+        tokens = [t for t in tokens if t >= 0]
+        return tokens
+    
+    def train(self,pos_examples,neg_examples):
+        pass
+    
+    def test(self,tweets,classifications):
+        pass
+    
+    def predict(self):
+        pass
     
 if __name__ == '__main__':
     datafolder = 'twitter-datasets'
-    #train_pos = f'{datafolder}/train_pos.txt'
-    #train_neg = f'{datafolder}/train_neg.txt'
-    train_pos = f'{datafolder}/train_pos_full.txt'
-    train_neg = f'{datafolder}/train_neg_full.txt'
+    train_pos = f'{datafolder}/train_pos.txt'
+    train_neg = f'{datafolder}/train_neg.txt'
+#    train_pos = f'{datafolder}/train_pos_full.txt'
+#    train_neg = f'{datafolder}/train_neg_full.txt'
     clf = CNN_TweetClassifier(debug=True)
     #clf.train(train_pos,train_neg)

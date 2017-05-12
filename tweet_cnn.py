@@ -45,10 +45,11 @@ class CNN_TweetClassifier:
         
         self._clf = None
         
+        self.model = None
         self._tf_train_step = None
         self._tf_accuracy = None
         
-        self.model = self._model()
+        self._model()
         
     def _model(self):
         '''Like in Kim's "Convolutional Neural Network for Sentence Classification",
@@ -97,7 +98,7 @@ class CNN_TweetClassifier:
             return tf.Variable(initial)
         
         x_input = tf.placeholder(tf.int32, shape=[PARAMS.batch_size, None])  # lists of tokens
-        y_input = tf.placeholder(tf.int32, shape=[PARAMS.batch_size, 1])  # 1 for positive, 0 for negative
+        y_input = tf.placeholder(tf.int32, shape=[PARAMS.batch_size, PARAMS.nof_classes])  # expect one-hot
         
         """EMBEDDING"""
         embeddings = EmbeddingVariable([len(self.vocab), PARAMS.dim_embeddings])
@@ -119,7 +120,7 @@ class CNN_TweetClassifier:
             h_conv1f = tf.nn.relu(conv2d(h_embed,W_conv1f) + b_conv1f)
             h_spp1f = spatial_pyramid_pool(h_conv1f,PARAMS.SPP_dimensions)
             
-            if(self.debug):
+            if self.debug:
                 print(f'h_conv1_f={f}:', h_conv1f.get_shape())
                 print(f'h_spp1_f={f}:', h_spp1f.get_shape())
                 print(f'expected_f={f}:',PARAMS.SPP_output_shape)
@@ -129,12 +130,13 @@ class CNN_TweetClassifier:
         
         h_conv1 =  tf.concat(pooled,axis=1)
         
-        if(self.debug):
+        if self.debug:
             print('h_conv1:',h_conv1.get_shape())
             assert h_conv1.get_shape() == (
                     PARAMS.batch_size,
                     len(PARAMS.gram_sizes) * PARAMS.SPP_output_shape[1]
                     )
+            
             
         """FULLY-CONNECTED LAYER with dropout"""
         nof_inputs = len(PARAMS.gram_sizes) * PARAMS.SPP_output_shape[1]
@@ -143,6 +145,9 @@ class CNN_TweetClassifier:
         b_fc1 = bias_variable([PARAMS.nof_neurons])
         
         h_fc1 = tf.nn.relu(tf.matmul(h_conv1,W_fc1) + b_fc1)
+        
+        if self.debug:
+            print('h_fc1:',h_fc1.get_shape())
         
         keep_prob = tf.placeholder(tf.float32)
         h_fc1_drop = tf.nn.dropout(h_fc1,keep_prob=keep_prob)
@@ -154,8 +159,34 @@ class CNN_TweetClassifier:
         
         h_fc2 =tf.nn.relu(tf.matmul(h_fc1_drop,W_fc2) + b_fc2)
         
-        return h_fc2
-    
+        if self.debug:
+            print('h_fc2:',h_fc2.get_shape())
+        
+        
+        """MODEL OUTPUT"""
+        y = h_fc2
+        self.model = y
+        
+        if self.debug:
+            print('y:',y.get_shape())
+            assert y.get_shape() == (
+                    PARAMS.batch_size,
+                    PARAMS.nof_classes
+                    )
+        
+        
+        """LOSS"""
+        loss = tf.reduce_mean(
+                tf.nn.softmax_cross_entropy_with_logits(
+                        logits=y, labels=y_input )
+                )
+        
+        self.train_step = tf.train.AdamOptimizer(PARAMS.adam_learning_rate).minimize(loss)
+        
+        
+        """ACCURACY"""
+        correct_prediction = tf.equal(tf.argmax(y,1), tf.argmax(y_input,1))
+        self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
     
     
 if __name__ == '__main__':

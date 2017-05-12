@@ -22,4 +22,6 @@ class CNN_PARAMS:
     nof_neurons = 1024
     dropout_keep_probability = 0.5
     
+    adam_learning_rate = 1e-4
+    
     

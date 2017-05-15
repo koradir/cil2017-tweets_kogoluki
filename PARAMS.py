@@ -3,10 +3,19 @@
 """
 provides parameters for the CNN_TweetClassifier
 
+ANY change 
+
 @author: koradir
 """
 
 class CNN_PARAMS:
+    nof_iterations = 200
+    dropout_keep_probability = 0.5
+    adam_learning_rate = 1e-4
+    print_frequency = 1
+    
+    """IF YOU CHANGE ANYTHING BELOW THIS LINE, THROW AWAY THE SAVED NETWORK AND RETRAIN!"""
+    
     dim_embeddings = 300  # length of embedding vectors
     batch_size = 50
     nof_classes = 2  # negative= 0, positive = 1
@@ -20,8 +29,4 @@ class CNN_PARAMS:
                        )
     
     nof_neurons = 1024
-    dropout_keep_probability = 0.5
-    
-    adam_learning_rate = 1e-4
-    
     

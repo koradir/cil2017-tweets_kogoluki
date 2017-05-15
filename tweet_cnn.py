@@ -18,6 +18,7 @@ Architecture:
 
 import tensorflow as tf
 import numpy as np
+import numpy.random as nprand
 
 try:
    import cPickle as pickle
@@ -27,7 +28,6 @@ except:
 import os
 
 from SpatialPyramidPooling import spatial_pyramid_pool
-from pathlib import Path
 from PARAMS import CNN_PARAMS as PARAMS
 
 
@@ -41,6 +41,7 @@ class CNN_TweetClassifier:
                  ):
         
         self.debug = debug
+        self._save_as = save_as
         
         """LOAD VOCABULARY"""
         self.vocab = {}
@@ -70,15 +71,22 @@ class CNN_TweetClassifier:
         if self.debug:
             print('restore from file: {0}'.format('yes' if model_restorable else 'no'))
         
-        self.session = tf.Session()
+        self._session = tf.Session()
         
         saver = tf.train.Saver(self._tf_variables)
-        with self.session as sess:
+        with self._session.as_default():
             if model_restorable:
-                saver.restore(sess,saved_model)
+                saver.restore(self._session,saved_model)
             else:
                 tf.global_variables_initializer().run()
-                saver.save(sess,save_as,write_meta_graph=False) 
+                saver.save(self._session,save_as,write_meta_graph=False)
+                
+        print('3 - session closed:', 'yes' if self._session._closed else 'no')
+    
+    def __del__(self):
+        print("CALLING __del__")
+        if not self._session._closed:
+            self._session.close()
         
     def _model(self):
         '''Like in Kim's "Convolutional Neural Network for Sentence Classification",
@@ -132,13 +140,13 @@ class CNN_TweetClassifier:
             self._tf_variables.append(v)
             return v
         
-        x_input = tf.placeholder(tf.int32, shape=[PARAMS.batch_size, None])  # lists of tokens
-        y_input = tf.placeholder(tf.int32, shape=[PARAMS.batch_size, PARAMS.nof_classes])  # expect one-hot
+        self._x_input = tf.placeholder(tf.int32, shape=[PARAMS.batch_size, None])  # lists of tokens
+        self._y_input = tf.placeholder(tf.int32, shape=[PARAMS.batch_size, PARAMS.nof_classes])  # expect one-hot
         
         """EMBEDDING"""
         embeddings = EmbeddingVariable([len(self.vocab), PARAMS.dim_embeddings],'embeddings')
         
-        h_embed = tf.nn.embedding_lookup(embeddings,x_input)
+        h_embed = tf.nn.embedding_lookup(embeddings,self._x_input)
         # note: h_embed has dimensions batch_size x sentence_length x dim_embeddings
         
         # reshaping because conv2d expects 4-dim tensors
@@ -184,8 +192,8 @@ class CNN_TweetClassifier:
         if self.debug:
             print('h_fc1:',h_fc1.get_shape())
         
-        keep_prob = tf.placeholder(tf.float32)
-        h_fc1_drop = tf.nn.dropout(h_fc1,keep_prob=keep_prob)
+        self._keep_prob = tf.placeholder(tf.float32)
+        h_fc1_drop = tf.nn.dropout(h_fc1,keep_prob=self._keep_prob)
         
         
         """READOUT LAYER"""
@@ -214,14 +222,14 @@ class CNN_TweetClassifier:
         """LOSS"""
         loss = tf.reduce_mean(
                 tf.nn.softmax_cross_entropy_with_logits(
-                        logits=y, labels=y_input )
+                        logits=y, labels=self._y_input )
                 )
         
         self._train_step = tf.train.AdamOptimizer(PARAMS.adam_learning_rate).minimize(loss)
         
         
         """ACCURACY"""
-        correct_prediction = tf.equal(tf.argmax(y,1), tf.argmax(y_input,1))
+        correct_prediction = tf.equal(tf.argmax(y,1), tf.argmax(self._y_input,1))
         self._accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
     
     def _representation(self,tweet):
@@ -229,8 +237,66 @@ class CNN_TweetClassifier:
         tokens = [t for t in tokens if t >= 0]
         return tokens
     
-    def train(self,pos_examples,neg_examples):
-        pass
+    def train(self,*examples,encoding="utf8"):
+        if len(examples) != PARAMS.nof_classes:
+            print(f'ERR: expected {PARAMS.nof_classes} classes, got examples for {len(examples)}')
+            return
+        
+        tweets = []
+        for i in range(len(examples)):
+            if self.debug:
+                print(f'reading examples for class {i}')
+            one_hot = np.zeros([PARAMS.nof_classes])
+            one_hot[i] = 1
+            
+            with open(examples[i], encoding=encoding) as fpos:
+                tweets_i = fpos.readlines()
+            
+            tweets_i_data = zip([self._representation(tweet) for tweet in tweets_i],
+                            [one_hot] * len(examples[i])
+                            )
+            
+            tweets += tweets_i_data
+        
+        '''
+        CNN expects all examples in a batch to have the same length
+        '''
+        tdict = {}
+        for t in tweets:
+            tdict.setdefault(len(t[0]), []).append(t)
+
+        def next_batch(ex_len):
+            exs = tdict[ex_len]            
+            idxs = nprand.randint(0,len(exs),PARAMS.batch_size)
+            return zip(*[exs[i] for i in idxs ])
+        
+        """TRAINING"""
+        with self._session.as_default():
+            for it in range(PARAMS.nof_iterations):
+                if it % PARAMS.print_frequency == 0:
+                    k = nprand.randint(0,len(tdict.keys()))
+                    k = list(tdict.keys())[k]
+                    xs,ys = next_batch(k)
+                    feed_dict = {self._x_input:xs,
+                                 self._y_input:ys,
+                                 self._keep_prob:1
+                                 }
+                    accuracy = self._accuracy.eval(feed_dict=feed_dict)
+                    print(f'iteration {it}; train acc = {accuracy}')
+                    
+                print('total nof sizes to train:', len(list(tdict.keys())))
+                for i in tdict.keys():
+                    print(f'training size {i}')
+                    xs,ys = next_batch(i)
+                    feed_dict = {self._x_input:xs,
+                                 self._y_input:ys,
+                                 self._keep_prob:PARAMS.dropout_keep_probability
+                                 }
+                    self._session.run(self._train_step,feed_dict=feed_dict)
+                    
+                print('saving ...')
+                saver = tf.train.Saver(self._tf_variables)
+                saver.save(self._session,self._save_as,write_meta_graph=False)
     
     def test(self,tweets,classifications):
         pass
@@ -244,5 +310,8 @@ if __name__ == '__main__':
     train_neg = f'{datafolder}/train_neg.txt'
 #    train_pos = f'{datafolder}/train_pos_full.txt'
 #    train_neg = f'{datafolder}/train_neg_full.txt'
-    clf = CNN_TweetClassifier(debug=True)
-    #clf.train(train_pos,train_neg)
+    clf = CNN_TweetClassifier()
+    
+    print("STARTING TRAINING")
+    # class 0 if negative, class 1 if positive
+    clf.train(train_neg,train_pos)

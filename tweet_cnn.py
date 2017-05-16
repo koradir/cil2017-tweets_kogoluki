@@ -77,6 +77,7 @@ class CNN_TweetClassifier:
         saver = tf.train.Saver(self._tf_variables)
         with self._session.as_default():
             if model_restorable:
+                tf.global_variables_initializer().run()
                 saver.restore(self._session,saved_model)
             else:
                 tf.global_variables_initializer().run()
@@ -202,7 +203,8 @@ class CNN_TweetClassifier:
         W_fc2 = weight_variable([PARAMS.nof_neurons,PARAMS.nof_classes],'W_fc2')
         b_fc2 = bias_variable([PARAMS.nof_classes],'b_fc2')
         
-        h_fc2 =tf.nn.relu(tf.matmul(h_fc1_drop,W_fc2) + b_fc2)
+        h_fc2 = tf.matmul(h_fc1_drop,W_fc2) + b_fc2
+        '''note to self: !! NO RELU HERE !!'''
         
         if self.debug:
             print('h_fc2:',h_fc2.get_shape())
@@ -210,7 +212,7 @@ class CNN_TweetClassifier:
         
         """MODEL OUTPUT"""
         y = h_fc2
-        self._model = y
+        self._model = tf.nn.softmax(y)
         
         if self.debug:
             print('y:',y.get_shape())
@@ -325,7 +327,7 @@ if __name__ == '__main__':
     train_neg = f'{datafolder}/train_neg.txt'
 #    train_pos = f'{datafolder}/train_pos_full.txt'
 #    train_neg = f'{datafolder}/train_neg_full.txt'
-    clf = CNN_TweetClassifier(saved_model=None,debug=True)
+    clf = CNN_TweetClassifier(debug=False)
     
     print("STARTING TRAINING")
     # class 0 if negative, class 1 if positive

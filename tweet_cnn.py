@@ -241,6 +241,7 @@ class CNN_TweetClassifier:
         return tokens
     
     def _represent(self,*examples,encoding='utf8'):
+        print("representing ...")
         if len(examples) != PARAMS.nof_classes:
             print(f'ERR: expected {PARAMS.nof_classes} classes, got examples for {len(examples)}')
             exit()
@@ -271,6 +272,7 @@ class CNN_TweetClassifier:
         return tdict
     
     def train(self,*examples,encoding='utf8'):
+        """the order of the files in examples determines what class they belong to!"""
         
         tdict = self._represent(examples,encoding=encoding)
 
@@ -368,14 +370,20 @@ if __name__ == '__main__':
     datafolder = 'twitter-datasets'
 #    train_neg = f'{datafolder}/train_neg.txt'
 #    train_pos = f'{datafolder}/train_pos.txt'
-    train_pos = f'{datafolder}/train_pos_full.txt'
     train_neg = f'{datafolder}/train_neg_full.txt'
+    train_pos = f'{datafolder}/train_pos_full.txt'
 
     clf = CNN_TweetClassifier(debug=False)
     
-#    print("STARTING TRAINING")
-#    # class 0 if negative, class 1 if positive
-#    clf.train(train_neg,train_pos)
+    
+    """the order in which the files are passed to the train/test methods
+       determines what class they belong to!"""
+    
+    
+    print("STARTING TRAINING")
+    # class 0 if negative, class 1 if positive
+    '''uncomment this line when you already have a trained model'''
+    clf.train(train_neg,train_pos) 
 
     print("TESTING")
     acc = clf.test(train_neg,train_pos)

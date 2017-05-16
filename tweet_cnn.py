@@ -29,6 +29,7 @@ import os
 
 from SpatialPyramidPooling import spatial_pyramid_pool
 from PARAMS import CNN_PARAMS as PARAMS
+from statusbar import status_update
 
 
 class CNN_TweetClassifier:
@@ -81,7 +82,8 @@ class CNN_TweetClassifier:
                 tf.global_variables_initializer().run()
                 saver.save(self._session,save_as,write_meta_graph=False)
                 
-        print('3 - session closed:', 'yes' if self._session._closed else 'no')
+        if self.debug:
+            assert not self._session._closed
     
     def __del__(self):
         print("CALLING __del__")
@@ -208,7 +210,7 @@ class CNN_TweetClassifier:
         
         """MODEL OUTPUT"""
         y = h_fc2
-        self.model = y
+        self._model = y
         
         if self.debug:
             print('y:',y.get_shape())
@@ -225,8 +227,13 @@ class CNN_TweetClassifier:
                         logits=y, labels=self._y_input )
                 )
         
-        self._train_step = tf.train.AdamOptimizer(PARAMS.adam_learning_rate).minimize(loss)
+#        loss = tf.reduce_mean(
+#                tf.nn.sigmoid_cross_entropy_with_logits(
+#                        logits=y,labels=tf.cast(self._y_input,tf.float32)
+#                        )
+#                )
         
+        self._train_step = tf.train.AdamOptimizer(PARAMS.learning_rate).minimize(loss)
         
         """ACCURACY"""
         correct_prediction = tf.equal(tf.argmax(y,1), tf.argmax(self._y_input,1))
@@ -265,9 +272,9 @@ class CNN_TweetClassifier:
         for t in tweets:
             tdict.setdefault(len(t[0]), []).append(t)
 
-        def next_batch(ex_len):
+        def next_batch(ex_len,amount=PARAMS.batch_size):
             exs = tdict[ex_len]            
-            idxs = nprand.randint(0,len(exs),PARAMS.batch_size)
+            idxs = nprand.randint(0,len(exs),amount)
             return zip(*[exs[i] for i in idxs ])
         
         """TRAINING"""
@@ -284,9 +291,17 @@ class CNN_TweetClassifier:
                     accuracy = self._accuracy.eval(feed_dict=feed_dict)
                     print(f'iteration {it}; train acc = {accuracy}')
                     
-                print('total nof sizes to train:', len(list(tdict.keys())))
+                    if self.debug:
+                        output = self._session.run(self._model,feed_dict=feed_dict)
+                        print('expected',ys)
+                        print('got',output)
+                        
+                    
+                top = len(list(tdict.keys())) -1
+                curr = 0
                 for i in tdict.keys():
-                    print(f'training size {i}')
+                    status_update(curr,top,label=f'training size {i}')
+                    curr += 1
                     xs,ys = next_batch(i)
                     feed_dict = {self._x_input:xs,
                                  self._y_input:ys,
@@ -310,7 +325,7 @@ if __name__ == '__main__':
     train_neg = f'{datafolder}/train_neg.txt'
 #    train_pos = f'{datafolder}/train_pos_full.txt'
 #    train_neg = f'{datafolder}/train_neg_full.txt'
-    clf = CNN_TweetClassifier()
+    clf = CNN_TweetClassifier(saved_model=None,debug=True)
     
     print("STARTING TRAINING")
     # class 0 if negative, class 1 if positive

@@ -11,13 +11,13 @@ ANY change
 class CNN_PARAMS:
     nof_iterations = 200
     dropout_keep_probability = 0.5
-    adam_learning_rate = 1e-4
+    learning_rate = 1e-4
     print_frequency = 1
     
     """IF YOU CHANGE ANYTHING BELOW THIS LINE, THROW AWAY THE SAVED NETWORK AND RETRAIN!"""
     
     dim_embeddings = 300  # length of embedding vectors
-    batch_size = 50
+    batch_size = 10
     nof_classes = 2  # negative= 0, positive = 1
     gram_sizes = [3,4,5]  # e.g. look at 3-, 4- and 5-grams
     
@@ -28,5 +28,5 @@ class CNN_PARAMS:
                        sum(conv1_feature_count*[2**i for i in SPP_dimensions]) - conv1_feature_count
                        )
     
-    nof_neurons = 1024
+    nof_neurons = 100
     

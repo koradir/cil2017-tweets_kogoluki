@@ -229,28 +229,22 @@ class CNN_TweetClassifier:
                         logits=y, labels=self._y_input )
                 )
         
-#        loss = tf.reduce_mean(
-#                tf.nn.sigmoid_cross_entropy_with_logits(
-#                        logits=y,labels=tf.cast(self._y_input,tf.float32)
-#                        )
-#                )
-        
         self._train_step = tf.train.AdamOptimizer(PARAMS.learning_rate).minimize(loss)
         
         """ACCURACY"""
-        correct_prediction = tf.equal(tf.argmax(y,1), tf.argmax(self._y_input,1))
-        self._accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+        self._correct_predictions = tf.equal(tf.argmax(y,1), tf.argmax(self._y_input,1))
+        self._accuracy = tf.reduce_mean(tf.cast(self._correct_predictions, tf.float32))
     
     def _representation(self,tweet):
         tokens = [self.vocab.get(t, -1) for t in tweet.strip().split()]
         tokens = [t for t in tokens if t >= 0]
         return tokens
     
-    def train(self,*examples,encoding="utf8"):
+    def _represent(self,*examples,encoding='utf8'):
         if len(examples) != PARAMS.nof_classes:
             print(f'ERR: expected {PARAMS.nof_classes} classes, got examples for {len(examples)}')
-            return
-        
+            exit()
+            
         tweets = []
         for i in range(len(examples)):
             if self.debug:
@@ -273,6 +267,12 @@ class CNN_TweetClassifier:
         tdict = {}
         for t in tweets:
             tdict.setdefault(len(t[0]), []).append(t)
+            
+        return tdict
+    
+    def train(self,*examples,encoding='utf8'):
+        
+        tdict = self._represent(examples,encoding=encoding)
 
         def next_batch(ex_len,amount=PARAMS.batch_size):
             exs = tdict[ex_len]            
@@ -291,7 +291,7 @@ class CNN_TweetClassifier:
                                  self._keep_prob:1
                                  }
                     accuracy = self._accuracy.eval(feed_dict=feed_dict)
-                    print(f'iteration {it}; train acc = {accuracy}')
+                    print(f'iteration {it}; acc(random sample) = {accuracy}')
                     
                     if self.debug:
                         output = self._session.run(self._model,feed_dict=feed_dict)
@@ -315,20 +315,68 @@ class CNN_TweetClassifier:
                 saver = tf.train.Saver(self._tf_variables)
                 saver.save(self._session,self._save_as,write_meta_graph=False)
     
-    def test(self,tweets,classifications):
-        pass
+    def _test(self,tdict):
+        nof_hits = 0
+        nof_samples = 0
+        
+        top = len(list(tdict.keys())) -1
+        curr = 0
+        status_update(curr,top)
+        for tpl_lst in tdict.values():            
+            nof_samples += len(tpl_lst)
+            xs,ys = zip(*tpl_lst)
+            i = 0
+            while i < len(xs):
+                k = min(i + PARAMS.batch_size,len(xs))
+                batch_xs = list(xs[i:k])
+                batch_ys = list(ys[i:k])
+                
+                missing = (PARAMS.batch_size - len(batch_xs))
+                if missing > 0:
+                    batch_xs += [ batch_xs[0] ] * missing
+                    batch_ys += [ batch_ys[0] ] * missing
+                    if self.debug:
+                        assert len(batch_xs) == PARAMS.batch_size
+                        assert len(batch_ys) == PARAMS.batch_size
+            
+                nof_hits += self._session.run(
+                        tf.reduce_sum(tf.cast(
+                                tf.slice(self._correct_predictions,[0],[k-i]),
+                                tf.float32)),
+                        feed_dict={
+                                self._x_input:batch_xs,
+                                self._y_input:batch_ys,
+                                self._keep_prob:1
+                                }
+                        )
+                i += PARAMS.batch_size
+            
+            status_update(curr,top)
+            curr += 1
+        
+        return nof_hits / nof_samples
+                        
+    def test(self,*examples,encoding='utf8'):
+        '''note to self: do not forget the * when passing examples'''
+        return self._test(self._represent(*examples,encoding=encoding))
     
     def predict(self):
+        # TODO:
         pass
     
 if __name__ == '__main__':
     datafolder = 'twitter-datasets'
-    train_pos = f'{datafolder}/train_pos.txt'
-    train_neg = f'{datafolder}/train_neg.txt'
-#    train_pos = f'{datafolder}/train_pos_full.txt'
-#    train_neg = f'{datafolder}/train_neg_full.txt'
+#    train_neg = f'{datafolder}/train_neg.txt'
+#    train_pos = f'{datafolder}/train_pos.txt'
+    train_pos = f'{datafolder}/train_pos_full.txt'
+    train_neg = f'{datafolder}/train_neg_full.txt'
+
     clf = CNN_TweetClassifier(debug=False)
     
-    print("STARTING TRAINING")
-    # class 0 if negative, class 1 if positive
-    clf.train(train_neg,train_pos)
+#    print("STARTING TRAINING")
+#    # class 0 if negative, class 1 if positive
+#    clf.train(train_neg,train_pos)
+
+    print("TESTING")
+    acc = clf.test(train_neg,train_pos)
+    print('accuracy on training set:',acc)

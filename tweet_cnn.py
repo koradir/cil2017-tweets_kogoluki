@@ -6,11 +6,9 @@ attempts to learn refined embeddings by means of a CNN.
 
 Architecture:
     embedding layer
-    -> convolution -> ReLU -> max-pooling
     -> convolution -> ReLU -> spatial pyramid pooling
-    -> fully connected layer
-    -> fully connected layer
-    -> dropout layer
+    -> fully connected layer with dropout
+    -> fully connected layer (readout layer)
     -> softmax
 
 @author: koradir

@@ -51,7 +51,7 @@ class CNN_TweetClassifier:
         print("vocabulary loaded")
         
         """BUILD MODEL"""
-        self.model = None
+        self._model = None
         self._train_step = None
         self._accuracy = None
         self._tf_variables = []
@@ -60,7 +60,7 @@ class CNN_TweetClassifier:
         tf.reset_default_graph()
         
         '''builds graph and initialises above variables'''
-        self._model()
+        self._build_model()
         
         """INITIALISE TF VARIABLES"""
         model_restorable = (
@@ -91,7 +91,7 @@ class CNN_TweetClassifier:
         if not self._session._closed:
             self._session.close()
         
-    def _model(self):
+    def _build_model(self):
         '''Like in Kim's "Convolutional Neural Network for Sentence Classification",
            (http://www.aclweb.org/anthology/D14-1181),
            we use filters of different sizes to capture different 'n-grams'.
@@ -362,9 +362,35 @@ class CNN_TweetClassifier:
         '''note to self: do not forget the * when passing examples'''
         return self._test(self._represent(*examples,encoding=encoding))
     
-    def predict(self):
-        # TODO:
-        pass
+    def predict(self,tweets):
+        
+        tweet_reps = [self._representation(t) for t in tweets]
+        nof_tweets = len(tweet_reps)
+        
+        predictions = []
+        
+        i = 0
+        while i < len(tweet_reps):
+            k = min(i + PARAMS.batch_size,nof_tweets)
+            batch = list(tweet_reps[i:k])
+            
+            missing = (PARAMS.batch_size - len(batch))
+            if missing > 0:
+                batch += [ batch[0] ] * missing
+                if self.debug:
+                    assert len(batch) == PARAMS.batch_size
+        
+            preds = self._session.run(
+                tf.slice(tf.argmax(self._model,1),[0],[k-i]),
+                feed_dict={
+                        self._x_input:batch,
+                        self._keep_prob:1
+                })
+                     
+            predictions.append(preds)       
+            i += PARAMS.batch_size
+            
+        return predictions
     
 if __name__ == '__main__':
     datafolder = 'twitter-datasets'
@@ -382,9 +408,13 @@ if __name__ == '__main__':
     
     print("STARTING TRAINING")
     # class 0 if negative, class 1 if positive
-    '''uncomment this line when you already have a trained model'''
+    '''uncomment this line when you already have a sufficiently trained model'''
     clf.train(train_neg,train_pos) 
 
     print("TESTING")
     acc = clf.test(train_neg,train_pos)
     print('accuracy on training set:',acc)
+
+    print("PREDICTING")
+    p = clf.predict(["Hello World"])
+    print('"Hello World" is a positive tweet:','yes' if p[0] == 1 else 'no')

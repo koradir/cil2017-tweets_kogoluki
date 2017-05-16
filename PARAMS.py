@@ -9,7 +9,7 @@ ANY change
 """
 
 class CNN_PARAMS:
-    nof_iterations = 200
+    nof_iterations = 50
     dropout_keep_probability = 0.5
     learning_rate = 1e-4
     print_frequency = 1

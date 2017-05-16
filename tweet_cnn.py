@@ -274,7 +274,7 @@ class CNN_TweetClassifier:
     def train(self,*examples,encoding='utf8'):
         """the order of the files in examples determines what class they belong to!"""
         
-        tdict = self._represent(examples,encoding=encoding)
+        tdict = self._represent(*examples,encoding=encoding)
 
         def next_batch(ex_len,amount=PARAMS.batch_size):
             exs = tdict[ex_len]            

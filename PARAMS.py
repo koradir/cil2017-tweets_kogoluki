@@ -3,8 +3,6 @@
 """
 provides parameters for the CNN_TweetClassifier
 
-ANY change 
-
 @author: koradir
 """
 

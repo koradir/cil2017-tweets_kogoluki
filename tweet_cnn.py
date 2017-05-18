@@ -79,7 +79,7 @@ class CNN_TweetClassifier:
                 saver.restore(self._session,saved_model)
             else:
                 tf.global_variables_initializer().run()
-                saver.save(self._session,save_as,write_meta_graph=False)
+                #saver.save(self._session,save_as,write_meta_graph=False)
                 
         if self.debug:
             assert not self._session._closed
@@ -361,10 +361,41 @@ class CNN_TweetClassifier:
         return self._test(self._represent(*examples,encoding=encoding))
     
     def predict(self,tweets):
-        
         tweet_reps = [self._representation(t) for t in tweets]
         nof_tweets = len(tweet_reps)
         
+        if(self.debug):
+            print(f'predicting {nof_tweets} tweets')
+        
+        predictions = []
+        
+        """The CNN expects all samples to have the same length."""
+
+        permutation, tweet_reps = zip(*sorted(enumerate(tweet_reps),key=lambda x: len(x[1])))
+        i = 0; j = 1
+        status_update(i,nof_tweets,label="Predicting")
+        while i < nof_tweets:
+            curr_len = len(tweet_reps[i])
+            while j < nof_tweets and len(tweet_reps[j]) == curr_len:
+                j += 1
+            
+            curr_preds = self._predict(tweet_reps[i:j])
+            predictions += curr_preds
+            
+            assert len(curr_preds) == j-i, f"ERR: i,j = {i,j}; expected {j-i} predictions but got {len(curr_preds)}!\ncurr = {curr_preds}\nreps={tweet_reps[i:j]}"
+
+            i = j
+            j = i + 1
+            status_update(i,nof_tweets,label="Predicting")
+        
+        assert len(predictions) == nof_tweets, f"ERR: expected {nof_tweets} predictions but got {len(predictions)}"
+        
+        inverse_permutation = np.argsort(permutation)
+        
+        return [ predictions[i] for i in inverse_permutation ]
+    
+    def _predict(self,tweet_reps):
+        nof_tweets = len(tweet_reps)
         predictions = []
         
         i = 0
@@ -385,7 +416,7 @@ class CNN_TweetClassifier:
                         self._keep_prob:1
                 })
                      
-            predictions.append(preds)       
+            predictions += preds.tolist()     
             i += PARAMS.batch_size
             
         return predictions

@@ -274,6 +274,10 @@ class CNN_TweetClassifier:
         
         tdict = self._represent(*examples,encoding=encoding)
 
+#        self._train_random(tdict)
+        self._train_all(tdict)
+    
+    def _train_random(self,tdict):
         def next_batch(ex_len,amount=PARAMS.batch_size):
             exs = tdict[ex_len]            
             idxs = nprand.randint(0,len(exs),amount)
@@ -310,6 +314,55 @@ class CNN_TweetClassifier:
                                  self._keep_prob:PARAMS.dropout_keep_probability
                                  }
                     self._session.run(self._train_step,feed_dict=feed_dict)
+                    
+                print('saving ...')
+                saver = tf.train.Saver(self._tf_variables)
+                saver.save(self._session,self._save_as,write_meta_graph=False)
+                
+    def _train_all(self,tdict):
+        """TRAINING"""
+        def random_selection(lst,amount=PARAMS.batch_size):
+            idxs = nprand.randint(0,len(lst),amount)
+            return zip(*[lst[i] for i in idxs ])
+        
+        top = len(list(tdict.keys()))
+        
+        with self._session.as_default():
+            for epoch in range(PARAMS.nof_iterations):
+                if epoch % PARAMS.print_frequency == 0:
+                    acc = self._test(tdict)
+                    print('accuracy(testing set) =',acc)
+                
+                label=f'epoch {epoch}'
+                curr = 0
+                status_update(curr,top,label=label)
+                for tpl_lst in tdict.values():
+                    xs,ys = zip(*tpl_lst)
+                    i = 0
+                    while i < len(xs):
+                        k = min(i + PARAMS.batch_size,len(xs))
+                        batch_xs = list(xs[i:k])
+                        batch_ys = list(ys[i:k])
+                        
+                        missing = (PARAMS.batch_size - len(batch_xs))
+                        if missing > 0:
+                            miss_xs, miss_ys = random_selection(tpl_lst,amount=missing)
+                            batch_xs += miss_xs
+                            batch_ys += miss_ys
+                            if self.debug:
+                                assert len(batch_xs) == PARAMS.batch_size
+                                assert len(batch_ys) == PARAMS.batch_size
+                                
+                        feed_dict = {
+                                self._x_input:batch_xs,
+                                self._y_input:batch_ys,
+                                self._keep_prob:PARAMS.dropout_keep_probability
+                                }
+                        self._session.run(self._train_step,feed_dict=feed_dict)
+                        i += PARAMS.batch_size
+                    
+                    curr += 1
+                    status_update(curr,top,label=label)
                     
                 print('saving ...')
                 saver = tf.train.Saver(self._tf_variables)
@@ -351,7 +404,7 @@ class CNN_TweetClassifier:
                         )
                 i += PARAMS.batch_size
             
-            status_update(curr,top)
+            status_update(curr,top,label='calculating accuracy')
             curr += 1
         
         return nof_hits / nof_samples

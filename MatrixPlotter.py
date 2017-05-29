@@ -6,6 +6,7 @@ Takes a matrix and uses PCA to plot it to a two-dimensional space.
 import numpy as np
 import matplotlib.pyplot as plt
 import pylab
+from sklearn import preprocessing
 
 pylab.rcParams['legend.loc'] = 'best'
 
@@ -30,10 +31,9 @@ class MatrixPlotter:
         M = X.shape[1]
         
         """
-        CENTER data before PCA
+        CENTER data before PCA and STANDARDISE
         """
-        xM = np.mean(X,axis=1)
-        X = X - xM[:,np.newaxis]
+        X = preprocessing.scale(X,copy=False)
         
         """
         PCA: U @ L @ U.T = eigenvalue decomposition of S=1/M * X @ X.T

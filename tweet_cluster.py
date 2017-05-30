@@ -104,9 +104,9 @@ class ClusterClassifier(TweetClassifier):
     
 if __name__ == '__main__':
     datafolder = 'twitter-datasets'
-    #train_pos = f'{datafolder}/train_pos.txt'
-    #train_neg = f'{datafolder}/train_neg.txt'
-    train_pos = f'{datafolder}/train_pos_full.txt'
-    train_neg = f'{datafolder}/train_neg_full.txt'
+    train_pos = f'{datafolder}/train_pos.txt'
+    train_neg = f'{datafolder}/train_neg.txt'
+#    train_pos = f'{datafolder}/train_pos_full.txt'
+#    train_neg = f'{datafolder}/train_neg_full.txt'
     clf = ClusterClassifier(embeddingsX='embeddingsX_K200_step0.001_epochs10.npy')
     clf.train(train_pos,train_neg)

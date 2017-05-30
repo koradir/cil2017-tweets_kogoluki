@@ -2,12 +2,14 @@ import numpy as np
 from pathlib import Path
 from TweetClassifier import TweetClassifier
 from kmeans import kmeans
+import itertools
 
 class KmeansClassifier(TweetClassifier):
     
     clf_path = Path('kmeans_classifier.pkl')
     __cent_pos = None
     __cent_neg = None
+    __centroids = None
     
     def __init__(self,
                  vocab='vocab.pkl',
@@ -50,6 +52,12 @@ class KmeansClassifier(TweetClassifier):
         accuracy = ncorrect / ntotal
         print("classifier trained")
         print(f"accuracy on training set:{accuracy}")
+        
+    def _load_clf(self):
+        super()._load_clf()
+        self.__cent_pos=self._clf[0]
+        self.__cent_neg=self._clf[1]
+        return True
     
     def accuracy(self,pos,neg,encoding="utf8"): 
         if self._clf is None:
@@ -73,7 +81,7 @@ class KmeansClassifier(TweetClassifier):
                 ncorrect += 1
                 
         for t in tweets_neg:
-            if self._predicit(t) == -1:
+            if self._predict(t) == -1:
                 ncorrect += 1
                 
         return ncorrect / ntotal
@@ -90,12 +98,22 @@ class KmeansClassifier(TweetClassifier):
         return self._predict(rep)
     
     def _predict(self,rep):
-        dist_pos = np.min([np.linalg.norm(rep - c) for c in self.__cent_pos])
-        dist_neg = np.min([np.linalg.norm(rep - c) for c in self.__cent_neg])
+#        dist_pos = np.min([np.linalg.norm(rep - c) for c in self.__cent_pos])
+#        dist_neg = np.min([np.linalg.norm(rep - c) for c in self.__cent_neg])
+
+        if self.__centroids is None:
+            centroids = list(itertools.chain(
+                    [(c,1) for c in self.__cent_pos],
+                    [(c,-1) for c in self.__cent_neg]
+                    ))
+            
+        centroids.sort(key=lambda x: np.linalg.norm(rep-x[0]))
         
-        if dist_pos < dist_neg:
+        dist = np.sum([x[1] for x in centroids[:5]])
+        
+        if dist > 0:
             return 1
-        elif dist_pos > dist_neg:
+        elif dist < 0:
             return -1
         else:
             if np.random.randint(2) > 0:
@@ -110,4 +128,5 @@ if __name__ == '__main__':
 #    train_pos = f'{datafolder}/train_pos_full.txt'
 #    train_neg = f'{datafolder}/train_neg_full.txt'
     clf = KmeansClassifier(embeddingsX='embeddingsX_K200_step0.001_epochs10.npy')
-    clf.train(train_pos,train_neg)
+    #clf.train(train_pos,train_neg,k=20)
+    print("accuracy on training set:",clf.accuracy(train_pos,train_neg))

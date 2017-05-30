@@ -114,8 +114,9 @@ class CNN_TweetClassifier:
         def conv2d(x,W):
             '''
             2D convolution, expects 4D input x and filter matrix W
+            Here, stride equals one word.
             '''
-            return tf.nn.conv2d(x,W,strides=[1,1,1,1],padding ='SAME')
+            return tf.nn.conv2d(x,W,strides=[1,1,PARAMS.dim_embeddings,1],padding ='SAME')
         
         def weight_variable(shape,name):
             '''
@@ -159,7 +160,7 @@ class CNN_TweetClassifier:
         nof_features = PARAMS.conv1_feature_count
         pooled = []
         for f in filter_sizes:
-            W_conv1f = weight_variable([f,f,1,nof_features],f'W_conv1_{f}')
+            W_conv1f = weight_variable([1,f*PARAMS.dim_embeddings,1,nof_features],f'W_conv1_{f}')
             b_conv1f = bias_variable([nof_features],f'b_conv1_{f}')
             h_conv1f = tf.nn.relu(conv2d(h_embed,W_conv1f) + b_conv1f)
             h_spp1f = spatial_pyramid_pool(h_conv1f,PARAMS.SPP_dimensions)
@@ -331,7 +332,7 @@ class CNN_TweetClassifier:
             for epoch in range(PARAMS.nof_iterations):
                 if epoch % PARAMS.print_frequency == 0:
                     acc = self._test(tdict)
-                    print('accuracy(testing set) =',acc)
+                    print('accuracy(training set) =',acc)
                 
                 label=f'epoch {epoch}'
                 curr = 0
@@ -374,8 +375,10 @@ class CNN_TweetClassifier:
         
         top = len(list(tdict.keys())) -1
         curr = 0
-        status_update(curr,top)
-        for tpl_lst in tdict.values():            
+        label = 'calculating accuracy'
+        status_update(curr,top,label=label)
+        for tpl_lst in tdict.values():   
+            nprand.shuffle(tpl_lst)
             nof_samples += len(tpl_lst)
             xs,ys = zip(*tpl_lst)
             i = 0
@@ -404,7 +407,7 @@ class CNN_TweetClassifier:
                         )
                 i += PARAMS.batch_size
             
-            status_update(curr,top,label='calculating accuracy')
+            status_update(curr,top,label=label)
             curr += 1
         
         return nof_hits / nof_samples
@@ -422,7 +425,7 @@ class CNN_TweetClassifier:
         
         predictions = []
         
-        """The CNN expects all samples to have the same length."""
+        """The CNN expects all samples in a batch to have the same length."""
 
         permutation, tweet_reps = zip(*sorted(enumerate(tweet_reps),key=lambda x: len(x[1])))
         i = 0; j = 1

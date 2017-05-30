@@ -240,7 +240,8 @@ class CNN_TweetClassifier:
         return tokens
     
     def _represent(self,*examples,encoding='utf8'):
-        print("representing ...")
+        if not PARAMS.suppress_output:
+            print("representing ...")
         if len(examples) != PARAMS.nof_classes:
             print(f'ERR: expected {PARAMS.nof_classes} classes, got examples for {len(examples)}')
             exit()
@@ -296,7 +297,8 @@ class CNN_TweetClassifier:
                                  self._keep_prob:1
                                  }
                     accuracy = self._accuracy.eval(feed_dict=feed_dict)
-                    print(f'iteration {it}; acc(random sample) = {accuracy}')
+                    if not PARAMS.suppress_output:
+                        print(f'iteration {it}; acc(random sample) = {accuracy}')
                     
                     if self.debug:
                         output = self._session.run(self._model,feed_dict=feed_dict)
@@ -307,7 +309,8 @@ class CNN_TweetClassifier:
                 top = len(list(tdict.keys())) -1
                 curr = 0
                 for i in tdict.keys():
-                    status_update(curr,top,label=f'training size {i}')
+                    if not PARAMS.suppress_output:
+                        status_update(curr,top,label=f'training size {i}')
                     curr += 1
                     xs,ys = next_batch(i)
                     feed_dict = {self._x_input:xs,
@@ -316,7 +319,8 @@ class CNN_TweetClassifier:
                                  }
                     self._session.run(self._train_step,feed_dict=feed_dict)
                     
-                print('saving ...')
+                if not PARAMS.suppress_output:
+                    print('saving ...')
                 saver = tf.train.Saver(self._tf_variables)
                 saver.save(self._session,self._save_as,write_meta_graph=False)
                 
@@ -330,13 +334,14 @@ class CNN_TweetClassifier:
         
         with self._session.as_default():
             for epoch in range(PARAMS.nof_iterations):
-                if epoch % PARAMS.print_frequency == 0:
+                if epoch % PARAMS.print_frequency == 0 and not PARAMS.suppress_output:
                     acc = self._test(tdict)
                     print('accuracy(training set) =',acc)
                 
                 label=f'epoch {epoch}'
                 curr = 0
-                status_update(curr,top,label=label)
+                if not PARAMS.suppress_output:
+                    status_update(curr,top,label=label)
                 for tpl_lst in tdict.values():
                     xs,ys = zip(*tpl_lst)
                     i = 0
@@ -362,10 +367,12 @@ class CNN_TweetClassifier:
                         self._session.run(self._train_step,feed_dict=feed_dict)
                         i += PARAMS.batch_size
                     
-                    curr += 1
-                    status_update(curr,top,label=label)
+                    if not PARAMS.suppress_output:
+                        curr += 1
+                        status_update(curr,top,label=label)
                     
-                print('saving ...')
+                if not PARAMS.suppress_output:
+                    print('saving ...')
                 saver = tf.train.Saver(self._tf_variables)
                 saver.save(self._session,self._save_as,write_meta_graph=False)
     
@@ -376,7 +383,8 @@ class CNN_TweetClassifier:
         top = len(list(tdict.keys())) -1
         curr = 0
         label = 'calculating accuracy'
-        status_update(curr,top,label=label)
+        if not PARAMS.suppress_output:
+            status_update(curr,top,label=label)
         for tpl_lst in tdict.values():   
             nprand.shuffle(tpl_lst)
             nof_samples += len(tpl_lst)
@@ -407,8 +415,9 @@ class CNN_TweetClassifier:
                         )
                 i += PARAMS.batch_size
             
-            status_update(curr,top,label=label)
-            curr += 1
+            if not PARAMS.suppress_output:
+                status_update(curr,top,label=label)
+                curr += 1
         
         return nof_hits / nof_samples
                         
@@ -429,7 +438,8 @@ class CNN_TweetClassifier:
 
         permutation, tweet_reps = zip(*sorted(enumerate(tweet_reps),key=lambda x: len(x[1])))
         i = 0; j = 1
-        status_update(i,nof_tweets,label="Predicting")
+        if not PARAMS.suppress_output:
+            status_update(i,nof_tweets,label="Predicting")
         while i < nof_tweets:
             curr_len = len(tweet_reps[i])
             while j < nof_tweets and len(tweet_reps[j]) == curr_len:
@@ -442,7 +452,8 @@ class CNN_TweetClassifier:
 
             i = j
             j = i + 1
-            status_update(i,nof_tweets,label="Predicting")
+            if not PARAMS.suppress_output:
+                status_update(i,nof_tweets,label="Predicting")
         
         assert len(predictions) == nof_tweets, f"ERR: expected {nof_tweets} predictions but got {len(predictions)}"
         

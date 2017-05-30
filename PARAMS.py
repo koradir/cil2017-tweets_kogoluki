@@ -7,7 +7,8 @@ provides parameters for the CNN_TweetClassifier
 """
 
 class CNN_PARAMS:
-    nof_iterations = 50
+    suppress_output = True
+    nof_iterations = 1
     dropout_keep_probability = 0.5
     learning_rate = 1e-4
     print_frequency = 1

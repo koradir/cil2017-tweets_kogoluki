@@ -6,7 +6,7 @@ This is a temporary script file.
 
 import numpy as np
 import matplotlib.pyplot as plt
-import statusbar
+from statusbar import status_update
 
 #inputMatrix = np.random.rand(50000,200);
 #k = 4;

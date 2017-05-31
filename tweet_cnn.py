@@ -523,7 +523,8 @@ class CNN_TweetClassifier:
             print(f'predicting {nof_tweets} tweets')
         
         if PARAMS.use_padding:
-            print('...with padding')
+            if not PARAMS.suppress_output:
+                print('predicting with padding')
             max_len = np.max([len(tr) for tr in tweet_reps])
             tweet_reps = [np.pad(tr,pad_width=(0,max_len-len(tr)),mode='constant') for tr in tweet_reps]
             return self._predict(tweet_reps)

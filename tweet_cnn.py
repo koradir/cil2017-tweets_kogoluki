@@ -276,8 +276,10 @@ class CNN_TweetClassifier:
         
         tdict = self._represent(*examples,encoding=encoding)
 
-#        self._train_random(tdict)
-        self._train_all(tdict)
+        if PARAMS.use_padding:
+            self._train_all_padded(tdict)
+        else:
+            self._train_all(tdict)
     
     def _train_random(self,tdict):
         def next_batch(ex_len,amount=PARAMS.batch_size):
@@ -375,12 +377,92 @@ class CNN_TweetClassifier:
                     print('saving ...')
                 saver = tf.train.Saver(self._tf_variables)
                 saver.save(self._session,self._save_as,write_meta_graph=False)
+                
+    def _pad(self,tdict):
+        """takes a length -> vector mapping and produces a list of equal-length zero-padded vectors"""
+        
+        if not PARAMS.suppress_output:
+            print("padding...")
+            
+        len_max = np.max(list(tdict.keys()))
+        padded = []
+        
+        for ls in tdict.values():
+            len_ls = len(ls[0][0])
+            diff = len_max - len_ls
+            if diff == 0:
+                padded.extend(ls)
+            else:
+                xs,ys = zip(*ls)
+                xs_pad = [np.pad(x,pad_width=(0,diff),mode='constant') for x in xs]
+                padded.extend(zip(xs_pad,ys))
+                
+        assert all(len(x[0]) == len_max for x in padded)
+        return padded
+                
+    def _train_all_padded(self,tdict):
+        def random_selection(lst,amount=PARAMS.batch_size):
+            idxs = nprand.randint(0,len(lst),amount)
+            return zip(*[lst[i] for i in idxs ])
+        
+        padded = self._pad(tdict)
+        len_max = len( padded[0][0])
+        
+        if not PARAMS.suppress_output:
+            print("training...")
+            
+        top = len(padded)
+        
+        with self._session.as_default():
+            for epoch in range(PARAMS.nof_iterations):
+                if epoch % PARAMS.print_frequency == 0 and not PARAMS.suppress_output:
+                    acc = self._test({len_max:padded})
+                    print('accuracy(training set) =',acc)
+                
+                label=f'epoch {epoch}'
+                curr = 0
+                if not PARAMS.suppress_output:
+                    status_update(curr,top,label=label)
+                    
+                nprand.shuffle(padded)
+                
+                xs,ys = zip(*padded)
+                i = 0
+                while i < len(xs):
+                    k = min(i + PARAMS.batch_size,len(xs))
+                    batch_xs = list(xs[i:k])
+                    batch_ys = list(ys[i:k])
+                    
+                    missing = (PARAMS.batch_size - len(batch_xs))
+                    if missing > 0:
+                        miss_xs, miss_ys = random_selection(padded,amount=missing)
+                        batch_xs += miss_xs
+                        batch_ys += miss_ys
+                        if self.debug:
+                            assert len(batch_xs) == PARAMS.batch_size
+                            assert len(batch_ys) == PARAMS.batch_size
+                            
+                    feed_dict = {
+                            self._x_input:batch_xs,
+                            self._y_input:batch_ys,
+                            self._keep_prob:PARAMS.dropout_keep_probability
+                            }
+                    self._session.run(self._train_step,feed_dict=feed_dict)
+                    i += PARAMS.batch_size
+                    
+                    if not PARAMS.suppress_output:
+                        status_update(i,top,label=label)
+                    
+                if not PARAMS.suppress_output:
+                    print('saving ...')
+                saver = tf.train.Saver(self._tf_variables)
+                saver.save(self._session,self._save_as,write_meta_graph=False)        
     
     def _test(self,tdict):
         nof_hits = 0
         nof_samples = 0
         
-        top = len(list(tdict.keys())) -1
+        top = len(list(tdict.keys()))
         curr = 0
         label = 'calculating accuracy'
         if not PARAMS.suppress_output:
@@ -416,14 +498,22 @@ class CNN_TweetClassifier:
                 i += PARAMS.batch_size
             
             if not PARAMS.suppress_output:
-                status_update(curr,top,label=label)
                 curr += 1
+                status_update(curr,top,label=label)
         
         return nof_hits / nof_samples
                         
     def test(self,*examples,encoding='utf8'):
         '''note to self: do not forget the * when passing examples'''
-        return self._test(self._represent(*examples,encoding=encoding))
+        
+        tdict = self._represent(*examples,encoding=encoding)
+
+        if PARAMS.use_padding:
+            padded = self._pad(tdict)
+            max_len = len(padded[0][0])
+            return self._test({max_len:padded})
+        else:
+            return self._test(tdict)
     
     def predict(self,tweets):
         tweet_reps = [self._representation(t) for t in tweets]
@@ -432,34 +522,42 @@ class CNN_TweetClassifier:
         if(self.debug):
             print(f'predicting {nof_tweets} tweets')
         
-        predictions = []
+        if PARAMS.use_padding:
+            print('...with padding')
+            max_len = np.max([len(tr) for tr in tweet_reps])
+            tweet_reps = [np.pad(tr,pad_width=(0,max_len-len(tr)),mode='constant') for tr in tweet_reps]
+            return self._predict(tweet_reps)
         
-        """The CNN expects all samples in a batch to have the same length."""
-
-        permutation, tweet_reps = zip(*sorted(enumerate(tweet_reps),key=lambda x: len(x[1])))
-        i = 0; j = 1
-        if not PARAMS.suppress_output:
-            status_update(i,nof_tweets,label="Predicting")
-        while i < nof_tweets:
-            curr_len = len(tweet_reps[i])
-            while j < nof_tweets and len(tweet_reps[j]) == curr_len:
-                j += 1
+        else:
             
-            curr_preds = self._predict(tweet_reps[i:j])
-            predictions += curr_preds
+            predictions = []
             
-            assert len(curr_preds) == j-i, f"ERR: i,j = {i,j}; expected {j-i} predictions but got {len(curr_preds)}!\ncurr = {curr_preds}\nreps={tweet_reps[i:j]}"
-
-            i = j
-            j = i + 1
+            """The CNN expects all samples in a batch to have the same length."""
+    
+            permutation, tweet_reps = zip(*sorted(enumerate(tweet_reps),key=lambda x: len(x[1])))
+            i = 0; j = 1
             if not PARAMS.suppress_output:
                 status_update(i,nof_tweets,label="Predicting")
-        
-        assert len(predictions) == nof_tweets, f"ERR: expected {nof_tweets} predictions but got {len(predictions)}"
-        
-        inverse_permutation = np.argsort(permutation)
-        
-        return [ predictions[i] for i in inverse_permutation ]
+            while i < nof_tweets:
+                curr_len = len(tweet_reps[i])
+                while j < nof_tweets and len(tweet_reps[j]) == curr_len:
+                    j += 1
+                
+                curr_preds = self._predict(tweet_reps[i:j])
+                predictions += curr_preds
+                
+                assert len(curr_preds) == j-i, f"ERR: i,j = {i,j}; expected {j-i} predictions but got {len(curr_preds)}!\ncurr = {curr_preds}\nreps={tweet_reps[i:j]}"
+    
+                i = j
+                j = i + 1
+                if not PARAMS.suppress_output:
+                    status_update(i,nof_tweets,label="Predicting")
+            
+            assert len(predictions) == nof_tweets, f"ERR: expected {nof_tweets} predictions but got {len(predictions)}"
+            
+            inverse_permutation = np.argsort(permutation)
+            
+            return [ predictions[i] for i in inverse_permutation ]
     
     def _predict(self,tweet_reps):
         nof_tweets = len(tweet_reps)

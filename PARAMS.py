@@ -7,13 +7,15 @@ provides parameters for the CNN_TweetClassifier
 """
 
 class CNN_PARAMS:
-    suppress_output = True
-    nof_iterations = 5000
+    suppress_output = False
+    nof_iterations = 50
     dropout_keep_probability = 0.5
     learning_rate = 1e-4
-    print_frequency = 1
+    print_frequency = 5
     
     """IF YOU CHANGE ANYTHING BELOW THIS LINE, THROW AWAY THE SAVED NETWORK AND RETRAIN!"""
+    
+    use_padding = True
     
     dim_embeddings = 300  # length of embedding vectors
     batch_size = 10

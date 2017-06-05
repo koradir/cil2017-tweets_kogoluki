@@ -154,13 +154,17 @@ class CNN_TweetClassifier:
         # reshaping because conv2d expects 4-dim tensors
         h_embed = tf.reshape(h_embed,[PARAMS.batch_size,-1,PARAMS.dim_embeddings,1])
         
+        if self.debug:
+            print('h_embed:',h_embed.get_shape())
+            print()
+        
         
         """CONVOLUTIONAL LAYERS"""
         filter_sizes = PARAMS.gram_sizes
         nof_features = PARAMS.conv1_feature_count
         pooled = []
         for f in filter_sizes:
-            W_conv1f = weight_variable([1,f*PARAMS.dim_embeddings,1,nof_features],f'W_conv1_{f}')
+            W_conv1f = weight_variable([f,PARAMS.dim_embeddings,1,nof_features],f'W_conv1_{f}')
             b_conv1f = bias_variable([nof_features],f'b_conv1_{f}')
             h_conv1f = tf.nn.relu(conv2d(h_embed,W_conv1f) + b_conv1f)
             h_spp1f = spatial_pyramid_pool(h_conv1f,PARAMS.SPP_dimensions)
@@ -610,6 +614,6 @@ if __name__ == '__main__':
     acc = clf.test(train_neg,train_pos)
     print('accuracy on training set:',acc)
 
-    print("PREDICTING")
-    p = clf.predict(["Hello World"])
-    print('"Hello World" is a positive tweet:','yes' if p[0] == 1 else 'no')
+#    print("PREDICTING")
+#    p = clf.predict(["Hello World"])
+#    print('"Hello World" is a positive tweet:','yes' if p[0] == 1 else 'no')

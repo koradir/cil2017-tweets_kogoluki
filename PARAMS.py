@@ -7,8 +7,8 @@ provides parameters for the CNN_TweetClassifier
 """
 
 class CNN_PARAMS:
-    suppress_output = False
-    nof_iterations = 50
+    suppress_output = True
+    nof_iterations = 100
     dropout_keep_probability = 0.5
     learning_rate = 1e-4
     print_frequency = 5
@@ -29,5 +29,5 @@ class CNN_PARAMS:
                        sum(conv1_feature_count*[2**i for i in SPP_dimensions]) - conv1_feature_count
                        )
     
-    nof_neurons = 1024
+    nof_neurons = len(gram_sizes) * SPP_output_shape[1]
     

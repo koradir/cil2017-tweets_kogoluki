@@ -18,7 +18,7 @@ def main():
     print("using nmax =", nmax, ", cooc.max() =", cooc.max())
 
     print("initializing embeddings")
-    embedding_dim = 200
+    embedding_dim = 300
     X = nprnd.normal(size=(cooc.shape[0], embedding_dim))
     Y = nprnd.normal(size=(cooc.shape[1], embedding_dim))
     
@@ -27,14 +27,16 @@ def main():
     step = 0.001
     alpha = 3 / 4
 
-    epochs = 10
+    epochs = 50
     
-#    pmax = len(cooc.row)-1
+    pmax = len(cooc.row)-1
+    print(pmax)
 
     for epoch in range(epochs):
-        print(f"epoch {epoch}")
-#        p = 0
-#        status_update(p,pmax)
+        p = 0
+#        label=f"epoch {epoch}"
+        print(f'epoch {epoch + 1} of {epochs}')
+#        status_update(p,pmax,label=label)
         for i, j, n in zip(cooc.row, cooc.col, cooc.data):
             mij = np.log(n)
             fn = f_func(n,nmax,alpha)
@@ -49,7 +51,7 @@ def main():
             Y[j,:] -= step * gradYj
             
 #            p += 1
-#            status_update(p,pmax)
+#            status_update(p,pmax,label=label)
 
     np.save(f'embeddingsX_K{embedding_dim}_step{step}_epochs{epochs}', X)
     #np.save('embeddingsY', Y)

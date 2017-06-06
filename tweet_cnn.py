@@ -160,20 +160,20 @@ class CNN_TweetClassifier:
         if self.debug:
             print('h_lookup:',h_lookup.get_shape())
             
-        embedding_weights = weight_variable([len(self.vocab),1],'embedding_weights')
-        h_weights = tf.nn.embedding_lookup(embedding_weights,self._x_input)
-        
-        if self.debug:
-            print('h_weights:',h_weights.get_shape())
-            
-        h_avg = tf.reduce_sum(h_weights * h_lookup,axis=1) / tf.reduce_sum(h_weights,axis = 1)
-        
-        if self.debug:
-            print('h_avg:',h_avg.get_shape())
+#        embedding_weights = weight_variable([len(self.vocab),1],'embedding_weights')
+#        h_weights = tf.nn.embedding_lookup(embedding_weights,self._x_input)
+#        
+#        if self.debug:
+#            print('h_weights:',h_weights.get_shape())
+#            
+#        h_avg = tf.reduce_sum(h_weights * h_lookup,axis=1) / tf.reduce_sum(h_weights,axis = 1)
+#        
+#        if self.debug:
+#            print('h_avg:',h_avg.get_shape())
         
         
         # reshaping because conv2d expects 4-dim tensors
-        h_embed = tf.reshape(h_avg,[PARAMS.batch_size,1,PARAMS.dim_embeddings,1])
+        h_embed = tf.reshape(h_lookup,[PARAMS.batch_size,-1,PARAMS.dim_embeddings,1])
         
         if self.debug:
             print('h_embed:',h_embed.get_shape())
@@ -185,9 +185,9 @@ class CNN_TweetClassifier:
         nof_features = PARAMS.conv1_feature_count
         pooled = []
         for f in filter_sizes:
-            W_conv1f = weight_variable([1,f,1,nof_features],f'W_conv1_{f}')
+            W_conv1f = weight_variable([f,PARAMS.dim_embeddings,1,nof_features],f'W_conv1_{f}')
             b_conv1f = bias_variable([nof_features],f'b_conv1_{f}')
-            h_conv1f = tf.nn.relu(conv2d(h_embed,W_conv1f) + b_conv1f)
+            h_conv1f = tf.nn.relu(conv2d(h_embed,W_conv1f,stride_y=PARAMS.dim_embeddings) + b_conv1f)
             h_spp1f = spatial_pyramid_pool(h_conv1f,PARAMS.SPP_dimensions)
             
             if self.debug:
@@ -634,15 +634,15 @@ if __name__ == '__main__':
        determines what class they belong to!"""
     
     
-    print("STARTING TRAINING")
-    # class 0 if negative, class 1 if positive
-    '''uncomment this line when you already have a sufficiently trained model'''
-    clf.train(train_neg,train_pos) 
-
-    print("TESTING")
-    clf = CNN_TweetClassifier(debug=False,embeddings='embeddingsX_K300_step0.001_epochs50.npy')
-    acc = clf.test(train_neg,train_pos)
-    print('accuracy on training set:',acc)
+#    print("STARTING TRAINING")
+#    # class 0 if negative, class 1 if positive
+#    '''uncomment this line when you already have a sufficiently trained model'''
+#    clf.train(train_neg,train_pos) 
+#
+#    print("TESTING")
+#    clf = CNN_TweetClassifier(debug=False,embeddings='embeddingsX_K300_step0.001_epochs50.npy')
+#    acc = clf.test(train_neg,train_pos)
+#    print('accuracy on training set:',acc)
 
 #    print("PREDICTING")
 #    p = clf.predict(["Hello World"])

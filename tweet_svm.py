@@ -51,7 +51,7 @@ if __name__ == '__main__':
     #train_neg = f'{datafolder}/train_neg.txt'
     train_pos = f'{datafolder}/train_pos_full.txt'
     train_neg = f'{datafolder}/train_neg_full.txt'
-    clf = SVM_TweetClassifier(embeddingsX='embeddingsX_K200_step0.001_epochs10.npy')
+    clf = SVM_TweetClassifier(embeddingsX='embeddingsX_K300_step0.001_epochs50.npy')
     clf.train(train_pos,train_neg)
 
 

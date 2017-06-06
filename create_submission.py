@@ -13,7 +13,7 @@ import csv
 
 datafolder = 'twitter-datasets'
 testfile = f'{datafolder}/test_data.txt'
-outfile = 'submission_svm2.csv'
+outfile = 'submission.csv'
 header = ['Id','Prediction']
 
 with open(testfile,'r',encoding='utf-8',newline='') as ftest:
@@ -33,6 +33,7 @@ idxs,tweets = zip(*lines)
 #    if item == 0:
 #        output_results[i] = -1
 
+outfile = 'submission_svm2.csv'
 clf=SVM_TweetClassifier(embeddingsX='embeddingsX_K300_step0.001_epochs50.npy')
 output_results = [clf.predict(t) for t in tweets]
 

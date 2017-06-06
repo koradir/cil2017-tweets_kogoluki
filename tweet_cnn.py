@@ -35,8 +35,8 @@ class CNN_TweetClassifier:
     def __init__(self,
                  vocab='vocab.pkl',  # saved dictionary (word -> word number)
                  embeddings=None,
-                 save_as='cnn_classifier.ckpt',  # save to this file
-                 saved_model='cnn_classifier.ckpt',  # set to None to discard saved model
+                 save_as='./cnn_classifier.ckpt',  # save to this file
+                 saved_model='./cnn_classifier.ckpt',  # set to None to discard saved model
                  debug=False
                  ):
         

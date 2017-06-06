@@ -627,22 +627,24 @@ if __name__ == '__main__':
     train_neg = f'{datafolder}/train_neg_full.txt'
     train_pos = f'{datafolder}/train_pos_full.txt'
 
-    clf = CNN_TweetClassifier(debug=True,embeddings='embeddingsX_K300_step0.001_epochs50.npy')
+    clf = CNN_TweetClassifier(debug=True)
+#    clf = CNN_TweetClassifier(debug=False,embeddings='embeddingsX_K300_step0.001_epochs50.npy')
     
     
     """the order in which the files are passed to the train/test methods
        determines what class they belong to!"""
     
     
-#    print("STARTING TRAINING")
-#    # class 0 if negative, class 1 if positive
-#    '''uncomment this line when you already have a sufficiently trained model'''
-#    clf.train(train_neg,train_pos) 
-#
-#    print("TESTING")
+    print("STARTING TRAINING")
+    # class 0 if negative, class 1 if positive
+    '''uncomment this line when you already have a sufficiently trained model'''
+    clf.train(train_neg,train_pos) 
+
+    print("TESTING")
+    clf = CNN_TweetClassifier(debug=False)
 #    clf = CNN_TweetClassifier(debug=False,embeddings='embeddingsX_K300_step0.001_epochs50.npy')
-#    acc = clf.test(train_neg,train_pos)
-#    print('accuracy on training set:',acc)
+    acc = clf.test(train_neg,train_pos)
+    print('accuracy on training set:',acc)
 
 #    print("PREDICTING")
 #    p = clf.predict(["Hello World"])

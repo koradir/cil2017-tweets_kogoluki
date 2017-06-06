@@ -14,7 +14,7 @@ train_pos = f'{datafolder}/train_pos.txt'
 encoding='utf8'
 
 vocabulary='vocab.pkl'
-embeddingsX='embeddingsX_K200_step0.001_epochs10.npy'
+embeddingsX='embeddingsX_K300_step0.001_epochs50.npy'
    
 with open(vocabulary,'rb') as f:
     vocab = pickle.load(f)

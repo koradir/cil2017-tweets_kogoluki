@@ -445,7 +445,6 @@ class CNN_TweetClassifier:
                     print('accuracy(training set) =',acc)
                 
                 label=f'epoch {epoch}'
-                print(label)
                 curr = 0
                 if not PARAMS.suppress_output:
                     status_update(curr,top,label=label)

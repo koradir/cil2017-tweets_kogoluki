@@ -35,8 +35,8 @@ class CNN_TweetClassifier:
     def __init__(self,
                  vocab='vocab.pkl',  # saved dictionary (word -> word number)
                  embeddings=None,
-                 save_as='cnn_classifier.ckpt',  # save to this file
-                 saved_model='cnn_classifier.ckpt',  # set to None to discard saved model
+                 save_as='./cnn_classifier.ckpt',  # save to this file
+                 saved_model='./cnn_classifier.ckpt',  # set to None to discard saved model
                  debug=False
                  ):
         
@@ -154,11 +154,26 @@ class CNN_TweetClassifier:
             assert E.shape == (len(self.vocab), PARAMS.dim_embeddings), f"expected embeddings matrix of size {len(self.vocab), PARAMS.dim_embeddings} but got {E.shape}"
             embeddings = tf.constant(E,dtype=tf.float32)
         
-        h_embed = tf.nn.embedding_lookup(embeddings,self._x_input)
+        h_lookup = tf.nn.embedding_lookup(embeddings,self._x_input)
         # note: h_embed has dimensions batch_size x sentence_length x dim_embeddings
         
+        if self.debug:
+            print('h_lookup:',h_lookup.get_shape())
+            
+        embedding_weights = weight_variable([len(self.vocab),1],'embedding_weights')
+        h_weights = tf.nn.embedding_lookup(embedding_weights,self._x_input)
+        
+        if self.debug:
+            print('h_weights:',h_weights.get_shape())
+            
+        h_avg = tf.reduce_sum(h_weights * h_lookup,axis=1) / tf.reduce_sum(h_weights,axis = 1)
+        
+        if self.debug:
+            print('h_avg:',h_avg.get_shape())
+        
+        
         # reshaping because conv2d expects 4-dim tensors
-        h_embed = tf.reshape(h_embed,[PARAMS.batch_size,-1,PARAMS.dim_embeddings,1])
+        h_embed = tf.reshape(h_avg,[PARAMS.batch_size,1,PARAMS.dim_embeddings,1])
         
         if self.debug:
             print('h_embed:',h_embed.get_shape())
@@ -613,22 +628,22 @@ if __name__ == '__main__':
     train_neg = f'{datafolder}/train_neg_full.txt'
     train_pos = f'{datafolder}/train_pos_full.txt'
 
-    clf = CNN_TweetClassifier(debug=False,embeddings='embeddingsX_K300_step0.001_epochs50.npy')
+    clf = CNN_TweetClassifier(debug=True,embeddings='embeddingsX_K300_step0.001_epochs50.npy')
     
     
-    """the order in which the files are passed to the train/test methods
-       determines what class they belong to!"""
-    
-    
-    print("STARTING TRAINING")
-    # class 0 if negative, class 1 if positive
-    '''uncomment this line when you already have a sufficiently trained model'''
-    clf.train(train_neg,train_pos) 
-
-    print("TESTING")
-    clf = CNN_TweetClassifier(debug=False,embeddings='embeddingsX_K300_step0.001_epochs50.npy')
-    acc = clf.test(train_neg,train_pos)
-    print('accuracy on training set:',acc)
+#    """the order in which the files are passed to the train/test methods
+#       determines what class they belong to!"""
+#    
+#    
+#    print("STARTING TRAINING")
+#    # class 0 if negative, class 1 if positive
+#    '''uncomment this line when you already have a sufficiently trained model'''
+#    clf.train(train_neg,train_pos) 
+#
+#    print("TESTING")
+#    clf = CNN_TweetClassifier(debug=False,embeddings='embeddingsX_K300_step0.001_epochs50.npy')
+#    acc = clf.test(train_neg,train_pos)
+#    print('accuracy on training set:',acc)
 
 #    print("PREDICTING")
 #    p = clf.predict(["Hello World"])

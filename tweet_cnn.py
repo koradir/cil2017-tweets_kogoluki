@@ -180,44 +180,41 @@ class CNN_TweetClassifier:
             print()
         
         
-#        """CONVOLUTIONAL LAYERS"""
-#        filter_sizes = PARAMS.gram_sizes
-#        nof_features = PARAMS.conv1_feature_count
-#        pooled = []
-#        for f in filter_sizes:
-#            W_conv1f = weight_variable([f,PARAMS.dim_embeddings,1,nof_features],f'W_conv1_{f}')
-#            b_conv1f = bias_variable([nof_features],f'b_conv1_{f}')
-#            h_conv1f = tf.nn.relu(conv2d(h_embed,W_conv1f) + b_conv1f)
-#            h_spp1f = spatial_pyramid_pool(h_conv1f,PARAMS.SPP_dimensions)
-#            
-#            if self.debug:
-#                print(f'h_conv1_f={f}:', h_conv1f.get_shape())
-#                print(f'h_spp1_f={f}:', h_spp1f.get_shape())
-#                print(f'expected_f={f}:',PARAMS.SPP_output_shape)
-#                print('')
-#            
-#            pooled.append(h_spp1f)
-#        
-#        h_conv1 =  tf.concat(pooled,axis=1)
-#        
-#        if self.debug:
-#            print('h_conv1:',h_conv1.get_shape())
-#            assert h_conv1.get_shape() == (
-#                    PARAMS.batch_size,
-#                    len(PARAMS.gram_sizes) * PARAMS.SPP_output_shape[1]
-#                    )
-#            
+        """CONVOLUTIONAL LAYERS"""
+        filter_sizes = PARAMS.gram_sizes
+        nof_features = PARAMS.conv1_feature_count
+        pooled = []
+        for f in filter_sizes:
+            W_conv1f = weight_variable([f,PARAMS.dim_embeddings,1,nof_features],f'W_conv1_{f}')
+            b_conv1f = bias_variable([nof_features],f'b_conv1_{f}')
+            h_conv1f = tf.nn.relu(conv2d(h_embed,W_conv1f) + b_conv1f)
+            h_spp1f = spatial_pyramid_pool(h_conv1f,PARAMS.SPP_dimensions)
+            
+            if self.debug:
+                print(f'h_conv1_f={f}:', h_conv1f.get_shape())
+                print(f'h_spp1_f={f}:', h_spp1f.get_shape())
+                print(f'expected_f={f}:',PARAMS.SPP_output_shape)
+                print('')
+            
+            pooled.append(h_spp1f)
+        
+        h_conv1 =  tf.concat(pooled,axis=1)
+        
+        if self.debug:
+            print('h_conv1:',h_conv1.get_shape())
+            assert h_conv1.get_shape() == (
+                    PARAMS.batch_size,
+                    len(PARAMS.gram_sizes) * PARAMS.SPP_output_shape[1]
+                    )
+            
             
         """FULLY-CONNECTED LAYER with dropout"""
-        nof_inputs = PARAMS.dim_embeddings
-        nof_neurons = PARAMS.dim_embeddings
+        nof_inputs = len(PARAMS.gram_sizes) * PARAMS.SPP_output_shape[1]
         
-        W_fc1 = weight_variable([nof_inputs,nof_neurons],'W_fc1')
-        b_fc1 = bias_variable([nof_neurons],'b_fc1')
+        W_fc1 = weight_variable([nof_inputs,PARAMS.nof_neurons],'W_fc1')
+        b_fc1 = bias_variable([PARAMS.nof_neurons],'b_fc1')
         
-        h_in = tf.reshape(h_embed,[PARAMS.batch_size,nof_neurons])
-        
-        h_fc1 = tf.nn.relu(tf.matmul(h_in,W_fc1) + b_fc1)
+        h_fc1 = tf.nn.relu(tf.matmul(h_conv1,W_fc1) + b_fc1)
         
         if self.debug:
             print('h_fc1:',h_fc1.get_shape())
@@ -227,7 +224,7 @@ class CNN_TweetClassifier:
         
         
         """READOUT LAYER"""
-        W_fc2 = weight_variable([nof_neurons,PARAMS.nof_classes],'W_fc2')
+        W_fc2 = weight_variable([PARAMS.nof_neurons,PARAMS.nof_classes],'W_fc2')
         b_fc2 = bias_variable([PARAMS.nof_classes],'b_fc2')
         
         h_fc2 = tf.matmul(h_fc1_drop,W_fc2) + b_fc2

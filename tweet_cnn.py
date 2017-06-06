@@ -34,6 +34,7 @@ class CNN_TweetClassifier:
     
     def __init__(self,
                  vocab='vocab.pkl',  # saved dictionary (word -> word number)
+                 embeddings=None,
                  save_as='cnn_classifier.ckpt',  # save to this file
                  saved_model='cnn_classifier.ckpt',  # set to None to discard saved model
                  debug=False
@@ -58,7 +59,7 @@ class CNN_TweetClassifier:
         tf.reset_default_graph()
         
         '''builds graph and initialises above variables'''
-        self._build_model()
+        self._build_model(embeddings)
         
         """INITIALISE TF VARIABLES"""
         model_restorable = (
@@ -89,7 +90,7 @@ class CNN_TweetClassifier:
         if not self._session._closed:
             self._session.close()
         
-    def _build_model(self):
+    def _build_model(self,fixed_embeddings=None):
         '''Like in Kim's "Convolutional Neural Network for Sentence Classification",
            (http://www.aclweb.org/anthology/D14-1181),
            we use filters of different sizes to capture different 'n-grams'.
@@ -111,12 +112,12 @@ class CNN_TweetClassifier:
            one that does not require limiting ourselves to a single feature
            per filter.
         '''
-        def conv2d(x,W):
+        def conv2d(x,W,stride_x=1,stride_y=PARAMS.dim_embeddings):
             '''
             2D convolution, expects 4D input x and filter matrix W
             Here, stride equals one word.
             '''
-            return tf.nn.conv2d(x,W,strides=[1,1,PARAMS.dim_embeddings,1],padding ='SAME')
+            return tf.nn.conv2d(x,W,strides=[1,stride_x,stride_y,1],padding ='SAME')
         
         def weight_variable(shape,name):
             '''
@@ -146,7 +147,12 @@ class CNN_TweetClassifier:
         self._y_input = tf.placeholder(tf.int32, shape=[PARAMS.batch_size, PARAMS.nof_classes])  # expect one-hot
         
         """EMBEDDING"""
-        embeddings = EmbeddingVariable([len(self.vocab), PARAMS.dim_embeddings],'embeddings')
+        if fixed_embeddings is None:
+            embeddings = EmbeddingVariable([len(self.vocab), PARAMS.dim_embeddings],'embeddings')
+        else:
+            E = np.load(fixed_embeddings)
+            assert E.shape == (len(self.vocab), PARAMS.dim_embeddings), f"expected embeddings matrix of size {len(self.vocab), PARAMS.dim_embeddings} but got {E.shape}"
+            embeddings = tf.constant(E,dtype=tf.float32)
         
         h_embed = tf.nn.embedding_lookup(embeddings,self._x_input)
         # note: h_embed has dimensions batch_size x sentence_length x dim_embeddings
@@ -424,6 +430,7 @@ class CNN_TweetClassifier:
                     print('accuracy(training set) =',acc)
                 
                 label=f'epoch {epoch}'
+                print(label)
                 curr = 0
                 if not PARAMS.suppress_output:
                     status_update(curr,top,label=label)
@@ -569,7 +576,12 @@ class CNN_TweetClassifier:
         predictions = []
         
         i = 0
-        while i < len(tweet_reps):
+        do_output = not PARAMS.suppress_output and PARAMS.use_padding
+        if do_output:
+            top = nof_tweets
+            status_update(i,top)
+        while i < nof_tweets:
+                
             k = min(i + PARAMS.batch_size,nof_tweets)
             batch = list(tweet_reps[i:k])
             
@@ -589,6 +601,9 @@ class CNN_TweetClassifier:
             predictions += preds.tolist()     
             i += PARAMS.batch_size
             
+            if do_output:
+                status_update(i,max([i,top]))
+            
         return predictions
     
 if __name__ == '__main__':
@@ -598,7 +613,7 @@ if __name__ == '__main__':
     train_neg = f'{datafolder}/train_neg_full.txt'
     train_pos = f'{datafolder}/train_pos_full.txt'
 
-    clf = CNN_TweetClassifier(debug=False)
+    clf = CNN_TweetClassifier(debug=False,embeddings='embeddingsX_K300_step0.001_epochs50.npy')
     
     
     """the order in which the files are passed to the train/test methods
@@ -611,6 +626,7 @@ if __name__ == '__main__':
     clf.train(train_neg,train_pos) 
 
     print("TESTING")
+    clf = CNN_TweetClassifier(debug=False,embeddings='embeddingsX_K300_step0.001_epochs50.npy')
     acc = clf.test(train_neg,train_pos)
     print('accuracy on training set:',acc)
 

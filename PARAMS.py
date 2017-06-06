@@ -29,5 +29,5 @@ class CNN_PARAMS:
                        sum(conv1_feature_count*[2**i for i in SPP_dimensions]) - conv1_feature_count
                        )
     
-    nof_neurons = len(gram_sizes) * SPP_output_shape[1]
+    nof_neurons = 512
     

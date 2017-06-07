@@ -15,10 +15,12 @@ class TweetRepresenter:
     def _representation(self,tweet):
         """simple auxiliary method, looks up tokens in the provided vocabulary
            words not in the vocabulary are ignored
+           note that we are adding +1 to all tokens s.t. we can zero-pad with
+           impunity
         """
         
-        tokens = [self.vocab.get(t, -1) for t in tweet.strip().split()]
-        tokens = [t for t in tokens if t >= 0]
+        tokens = [self.vocab.get(t, -1) + 1 for t in tweet.strip().split()]
+        tokens = [t for t in tokens if t > 0]
         return tokens
     
     def represent(self,tweets):

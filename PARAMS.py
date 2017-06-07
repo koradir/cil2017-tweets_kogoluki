@@ -19,6 +19,9 @@ class CNN_BASE_PARAMS:
     
     nof_classes = 2  # negative= 0, positive = 1
     dim_embeddings = 300  # length of embedding vectors
+    gram_sizes = [3,4,5]  # e.g. look at 3-, 4- and 5-grams
+    
+    conv1_feature_count = 100
     
 class CNN_PARAMS:
     suppress_output = False

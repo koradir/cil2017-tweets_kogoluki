@@ -33,21 +33,21 @@ class CNN_Classifier:
         
         
         """LOAD VOCABULARY"""
-        self.vocab = {}
+        self._vocab = {}
         with open(vocab,'rb') as f:
-            self.vocab = pickle.load(f)
+            self._vocab = pickle.load(f)
         if not self.PARAMS.suppress_output:
             print("vocabulary loaded")
             
-        self._tr = TweetRepresenter(vocab)
+        self._tr = TweetRepresenter(self._vocab)
         
         """BUILD MODEL"""
         self._embeddings = None     # embeddings matrix
         self._x_input = None        # expect placeholder (tweet vectors)
         self._y_input = None        # expect placeholder (one-hot vectors)
-        self._keep_probs = None     # expect placeholder (dropout keep probability)
+        self._keep_prob = None     # expect placeholder (dropout keep probability)
         self._model = None          # model output
-        self._train_step = None     # self-explanatory
+        self._train_step = None     # runnable training step
         self._nof_corrects = None   # nof correct predictions in the batch
         self._tf_variables = []     # variables to be saved/restored
         
@@ -56,6 +56,15 @@ class CNN_Classifier:
         
         '''builds graph and initialises above variables'''
         self._build_model()
+        
+        '''check if all members have been set'''
+        assert self._embeddings is not None
+        assert self._x_input is not None
+        assert self._y_input is not None
+        assert self._keep_prob is not None
+        assert self._train_step is not None
+        assert self._nof_corrects is not None
+        assert self._tf_variables
         
         """INITIALISE TF VARIABLES"""
         model_restorable = (
@@ -217,6 +226,8 @@ class CNN_Classifier:
             predictions.extend(preds)
             if with_output:
                 status_update(i,top,label)
+                
+        assert len(predictions) == len(tweet_reps)
                 
         return predictions
             

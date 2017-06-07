@@ -112,12 +112,12 @@ class CNN_TweetClassifier:
            one that does not require limiting ourselves to a single feature
            per filter.
         '''
-        def conv2d(x,W,stride_x=1,stride_y=1):
+        def conv2d(x,W,stride_x=1,stride_y=1,padding='VALID'):
             '''
             2D convolution, expects 4D input x and filter matrix W
             Here, stride equals one word.
             '''
-            return tf.nn.conv2d(x,W,strides=[1,stride_x,stride_y,1],padding ='SAME')
+            return tf.nn.conv2d(x,W,strides=[1,stride_x,stride_y,1],padding =padding)
         
         def weight_variable(shape,name):
             '''
@@ -187,7 +187,7 @@ class CNN_TweetClassifier:
         for f in filter_sizes:
             W_conv1f = weight_variable([f,PARAMS.dim_embeddings,1,nof_features],f'W_conv1_{f}')
             b_conv1f = bias_variable([nof_features],f'b_conv1_{f}')
-            h_conv1f = tf.nn.relu(conv2d(h_embed,W_conv1f,stride_y=PARAMS.dim_embeddings) + b_conv1f)
+            h_conv1f = tf.nn.relu(conv2d(h_embed,W_conv1f) + b_conv1f)
             h_spp1f = spatial_pyramid_pool(h_conv1f,PARAMS.SPP_dimensions)
             
             if self.debug:

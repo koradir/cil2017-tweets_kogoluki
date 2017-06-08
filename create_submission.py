@@ -6,7 +6,7 @@ creates sample submission
 @author: koradir
 """
 
-from tweet_cnn import CNN_TweetClassifier
+from CNN_BaselineClassifier import CNN_BaselineClassifier
 import csv
 
 
@@ -22,15 +22,12 @@ lines = [ (int(x[0]),x[1]) for x in [s.split(',',1) for s in lines] ]
 
 idxs,tweets = zip(*lines)
 
-clf = CNN_TweetClassifier(embeddings='embeddingsX_K300_step0.001_epochs50.npy')
-output_results = clf.predict(tweets)
+clf = CNN_BaselineClassifier()
+output_results = clf.predict(tweets,remap={0:-1})
+
+assert all(x == -1 or x == 1 for x in output_results)
 
 print(f'received {len(output_results)} predictions')
-
-"""expected classification for "negative" is -1, not 0"""
-for i,item in enumerate(output_results):
-    if item == 0:
-        output_results[i] = -1
 
 results = zip(idxs,output_results)
 

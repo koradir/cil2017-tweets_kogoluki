@@ -131,7 +131,7 @@ class CNN_BaselineClassifier(CNN_Classifier):
         self._correct_predictions = tf.equal(tf.argmax(y,1), tf.argmax(self._y_input,1))
 
 if __name__ == '__main__':
-    clf = CNN_BaselineClassifier(debug=True,retrain=True)
+    clf = CNN_BaselineClassifier(retrain=True)
     datafolder = 'twitter-datasets'
     train_neg = f'{datafolder}/train_neg.txt'
     train_pos = f'{datafolder}/train_pos.txt'
@@ -140,7 +140,7 @@ if __name__ == '__main__':
     clf.train(train_neg,train_pos)
     
     print("TESTING")
-    clf = CNN_BaselineClassifier(debug=True)
+    clf = CNN_BaselineClassifier()
     acc = clf.test(train_neg,train_pos)
     print(f'accuracy(training set) = {acc}')
     

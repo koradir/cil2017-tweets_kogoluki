@@ -23,8 +23,17 @@ class TweetRepresenter:
         tokens = [t for t in tokens if t > shift-1]
         return tokens
     
-    def represent(self,tweets,shift=0):
-        return [self._representation(tweet,shift) for tweet in tweets]
+    def _pad(self,tweet_reps, pad_with):
+        len_max = max([len(t) for t in tweet_reps])
+        return [np.pad(t,pad_width=(0,len_max-len(t)),mode='constant',constant_values=pad_with) for t in tweet_reps]
+    
+    def represent(self,tweets,shift=0,pad_with=None):
+        tweet_reps = [self._representation(tweet,shift) for tweet in tweets]
+        
+        if pad_with is not None:
+            return self._pad(tweet_reps,pad_with)
+        else:
+            return tweet_reps
     
     def represent_training_data(self,*examples,nof_classes,encoding='utf8',pad_with=None,shift=0):
         """
@@ -65,7 +74,6 @@ class TweetRepresenter:
             
         if pad_with is not None:
             ts,ohs = zip(*tweets)
-            len_max = max([len(t) for t in ts])
-            tweets = zip([np.pad(t,pad_width=(0,len_max-len(t)),mode='constant',constant_values=pad_with) for t in ts],ohs)
+            tweets = zip(self._pad(ts,pad_with),ohs)
             
         return list(tweets)

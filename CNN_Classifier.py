@@ -196,7 +196,7 @@ class CNN_Classifier:
         return nof_hits/top
     
     def predict(self,tweets,remap=None):
-        predictions = self._predict(self._tr.represent(tweets,shift=1))
+        predictions = self._predict(self._tr.represent(tweets,shift=1,pad_with=0))
         
         if remap is not None:
             for i,p in enumerate(predictions):
@@ -222,11 +222,13 @@ class CNN_Classifier:
             
             i, xs = self._next_batch(tweet_reps,i)
             
+            assert all(len(x) == len(xs[0]) for x in xs),f'ERR: differently-sized tensors: min={min([len(x) for x in xs])}, max={max([len(x) for x in xs])}'
+            
             preds = self._session.run(
                 tf.slice(tf.argmax(self._model,1),[0],[s]),
                 feed_dict={
-                        self._x_input:xs,
-                        self._keep_prob:1
+                        self._x_input : xs,
+                        self._keep_prob : 1
                 })
             predictions.extend(preds)
             if with_output:

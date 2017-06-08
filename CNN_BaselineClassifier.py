@@ -128,8 +128,7 @@ class CNN_BaselineClassifier(CNN_Classifier):
         self._train_step = tf.train.AdamOptimizer(PARAMS.learning_rate).minimize(loss)
         
         """EVALUATION"""
-        correct_predictions = tf.equal(tf.argmax(y,1), tf.argmax(self._y_input,1))
-        self._nof_corrects = tf.reduce_sum(tf.cast(correct_predictions, "float"))
+        self._correct_predictions = tf.equal(tf.argmax(y,1), tf.argmax(self._y_input,1))
 
 if __name__ == '__main__':
     clf = CNN_BaselineClassifier(debug=True,retrain=True)

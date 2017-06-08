@@ -48,7 +48,7 @@ class CNN_Classifier:
         self._keep_prob = None     # expect placeholder (dropout keep probability)
         self._model = None          # model output
         self._train_step = None     # runnable training step
-        self._nof_corrects = None   # nof correct predictions in the batch
+        self._correct_predictions = None   # for each sample in the batch, whether or not prediction was correct
         self._tf_variables = []     # variables to be saved/restored
         
         '''closing a session does not get rid of legacy stuff'''
@@ -63,7 +63,7 @@ class CNN_Classifier:
         assert self._y_input is not None
         assert self._keep_prob is not None
         assert self._train_step is not None
-        assert self._nof_corrects is not None
+        assert self._correct_predictions is not None
         assert self._tf_variables
         
         """INITIALISE TF VARIABLES"""
@@ -179,14 +179,17 @@ class CNN_Classifier:
             status_update(i,top,label)
         
         while i < top:
+            s = min(i+self.PARAMS.batch_size,top) - i
             i, batch = self._next_batch(tweet_reps,i)
             xs,ys = zip(*batch)
             
-            nof_hits += self._session.run(self._nof_corrects,feed_dict = {
-                    self._x_input : xs,
-                    self._y_input : ys,
-                    self._keep_prob : 1
-                    })
+            nof_hits += self._session.run(
+                    tf.reduce_sum(tf.cast(tf.slice(self._correct_predictions,[0],[s]),tf.float32)),
+                    feed_dict = {
+                            self._x_input : xs,
+                            self._y_input : ys,
+                            self._keep_prob : 1}
+                    )
             if with_output:
                 status_update(i,top,label)
                 
@@ -215,7 +218,7 @@ class CNN_Classifier:
             status_update(i,top,label)
         
         while i < top:
-            s = min([i+self.PARAMS.batch_size],top) - i
+            s = min(i+self.PARAMS.batch_size,top) - i
             
             i, xs = self._next_batch(tweet_reps,i)
             

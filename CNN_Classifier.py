@@ -111,7 +111,8 @@ class CNN_Classifier:
                 *examples,
                 nof_classes=self.PARAMS.nof_classes,
                 encoding=encoding,
-                pad_with=0
+                pad_with=0,
+                shift=1
                 )
         
     def train(self,*examples,encoding='utf8'):        
@@ -192,7 +193,7 @@ class CNN_Classifier:
         return nof_hits/top
     
     def predict(self,tweets,remap=None):
-        predictions = self._predict(self._tr.represent(tweets))
+        predictions = self._predict(self._tr.represent(tweets,shift=1))
         
         if remap is not None:
             for i,p in enumerate(predictions):

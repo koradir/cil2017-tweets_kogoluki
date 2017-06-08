@@ -12,21 +12,21 @@ class TweetRepresenter:
     def __init__(self,vocab):
         self._vocab = vocab
         
-    def _representation(self,tweet):
+    def _representation(self,tweet,shift=0):
         """simple auxiliary method, looks up tokens in the provided vocabulary
            words not in the vocabulary are ignored
            note that we are adding +1 to all tokens s.t. we can zero-pad with
            impunity
         """
         
-        tokens = [self._vocab.get(t, -1) + 1 for t in tweet.strip().split()]
-        tokens = [t for t in tokens if t > 0]
+        tokens = [self._vocab.get(t, -1) + shift for t in tweet.strip().split()]
+        tokens = [t for t in tokens if t > shift-1]
         return tokens
     
-    def represent(self,tweets):
-        return [self._representation(tweet) for tweet in tweets]
+    def represent(self,tweets,shift=0):
+        return [self._representation(tweet,shift) for tweet in tweets]
     
-    def represent_training_data(self,*examples,nof_classes,encoding='utf8',pad_with=None):
+    def represent_training_data(self,*examples,nof_classes,encoding='utf8',pad_with=None,shift=0):
         """
         create a (representation, one_hot) tuple for each set of example)
         the one-hot is a vector of length `len(examples)` with one_hot[i]=1
@@ -57,7 +57,7 @@ class TweetRepresenter:
             with open(examples[i], encoding=encoding) as fpos:
                 tweets_i = fpos.readlines()
             
-            tweets_i_data = zip(self.represent(tweets_i),
+            tweets_i_data = zip(self.represent(tweets_i,shift),
                             [one_hot] * len(examples[i])
                             )
             

@@ -19,7 +19,7 @@ class TweetRepresenter:
            impunity
         """
         
-        tokens = [self.vocab.get(t, -1) + 1 for t in tweet.strip().split()]
+        tokens = [self._vocab.get(t, -1) + 1 for t in tweet.strip().split()]
         tokens = [t for t in tokens if t > 0]
         return tokens
     
@@ -51,8 +51,6 @@ class TweetRepresenter:
             
         tweets = []
         for i in range(len(examples)):
-            if self.debug:
-                print(f'reading examples for class {i}')
             one_hot = np.zeros([nof_classes])
             one_hot[i] = 1
             
@@ -68,6 +66,6 @@ class TweetRepresenter:
         if pad_with is not None:
             ts,ohs = zip(*tweets)
             len_max = max([len(t) for t in ts])
-            tweets = zip([np.pad(t,pad_with=(0,len_max-len(t)),mode='constant',constant_values=pad_with) for t in ts],ohs)
+            tweets = zip([np.pad(t,pad_width=(0,len_max-len(t)),mode='constant',constant_values=pad_with) for t in ts],ohs)
             
-        return tweets
+        return list(tweets)

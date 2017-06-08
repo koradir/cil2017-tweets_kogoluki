@@ -132,4 +132,19 @@ class CNN_BaselineClassifier(CNN_Classifier):
 
 if __name__ == '__main__':
     clf = CNN_BaselineClassifier(debug=True)
-    print("Hello World")
+    datafolder = 'twitter-datasets'
+    train_neg = f'{datafolder}/train_neg.txt'
+    train_pos = f'{datafolder}/train_pos.txt'
+    
+    print("TRAINING")
+    clf.train(train_neg,train_pos)
+    
+    print("TESTING")
+    acc = clf.test(train_neg,train_pos)
+    print(f'accuracy(training set) = {acc}')
+    
+    train_neg = f'{datafolder}/train_neg_full.txt'
+    train_pos = f'{datafolder}/train_pos_full.txt'
+    
+    acc = clf.test(train_neg,train_pos)
+    print(f'accuracy(testing set) = {acc}')

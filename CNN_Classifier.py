@@ -115,20 +115,21 @@ class CNN_Classifier:
                 )
         
     def train(self,*examples,encoding='utf8'):        
-        return self._train(self._get_representation(*examples,encoding))
+        return self._train(self._get_representation(*examples,encoding=encoding))
     
     def _next_batch(self,lst,start):
         batch_size = self.PARAMS.batch_size
         
         end = min([start + batch_size,len(lst)])
         
-        batch = lst[start,end]
+        batch = lst[start:end]
         
-        missing = batch_size = len(batch)
+        missing = batch_size - len(batch)
         if missing > 0:
             idxs = nprand.randint(0,len(lst),missing)
-            batch.extend(lst[idxs])
+            batch.extend([lst[i] for i in idxs ])
             
+        assert len(batch) == self.PARAMS.batch_size
         return end, batch
         
     def _train(self,tweet_reps):            
@@ -150,7 +151,7 @@ class CNN_Classifier:
                 self._session.run(self._train_step,feed_dict = {
                         self._x_input : xs,
                         self._y_input : ys,
-                        self._keep_probs : self.PARAMS.dropout_keep_probability
+                        self._keep_prob : self.PARAMS.dropout_keep_probability
                         })
                 self._save_clf()
                 if with_output:
@@ -163,7 +164,7 @@ class CNN_Classifier:
     def test(self,*examples,encoding='utf8'):
         """calculates and returns prediction accuracy"""
         
-        return self._test(self._get_representation(*examples,encoding))
+        return self._test(self._get_representation(*examples,encoding=encoding))
     
     def _test(self,tweet_reps):            
         with_output = not self.PARAMS.suppress_output
@@ -183,7 +184,7 @@ class CNN_Classifier:
             nof_hits += self._session.run(self._nof_corrects,feed_dict = {
                     self._x_input : xs,
                     self._y_input : ys,
-                    self._keep_probs : 1
+                    self._keep_prob : 1
                     })
             if with_output:
                 status_update(i,top,label)

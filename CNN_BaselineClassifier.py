@@ -93,18 +93,23 @@ class CNN_BaselineClassifier(CNN_Classifier):
             print()
             
         """FULLY CONNECTED LAYERS"""
+                
+        W_fc0 = self._weight_variable([nof_filters,PARAMS.nof_neurons],'W_fc0')
+        b_fc0 = self._bias_variable([PARAMS.nof_neurons],'b_fc0')
+        h_fc0 = tf.nn.xw_plus_b(h_flattened1,W_fc0,b_fc0)
+
         
         # dropout disables fraction of neurons ==> prevents co-adapting
         # (i.e. the activeneed to learn on its own)
         
         self._keep_prob = tf.placeholder(tf.float32)
-        h_dropout1 = tf.nn.dropout(h_flattened1,self._keep_prob)
+        h_dropout1 = tf.nn.dropout(h_fc0,self._keep_prob)
         
         if self.debug:
             print('h_drouput1:',h_dropout1.get_shape())
         
         # output
-        W_fc1 = self._weight_variable([nof_filters,PARAMS.nof_classes],'W_fc1')
+        W_fc1 = self._weight_variable([PARAMS.nof_neurons,PARAMS.nof_classes],'W_fc1')
         b_fc1 = self._bias_variable([PARAMS.nof_classes],'b_fc1')
         h_fc1 = tf.nn.xw_plus_b(h_dropout1,W_fc1,b_fc1)
         
@@ -113,7 +118,7 @@ class CNN_BaselineClassifier(CNN_Classifier):
         
         """MODEL OUTPUT"""
         y = h_fc1
-        self._model = y
+        self._model = tf.nn.softmax(y)
         
         if self.debug:
             print('y',y.get_shape())

@@ -10,7 +10,7 @@ class CNN_BASE_PARAMS:
     
     dropout_keep_probability = 0.5
     learning_rate = 1e-4
-    print_frequency = 5  # check accuracy on testing set ever so frequently set >= nof_iterations to disable
+    print_frequency = 51  # check accuracy on testing set ever so frequently set >= nof_iterations to disable
     
     """IF YOU CHANGE ANYTHING BELOW THIS LINE, THROW AWAY THE SAVED NETWORK AND RETRAIN!"""
     
@@ -22,6 +22,8 @@ class CNN_BASE_PARAMS:
     gram_sizes = [3,4,5]  # e.g. look at 3-, 4- and 5-grams
     
     conv1_feature_count = 100
+    
+    nof_neurons = 512
     
 class CNN_PARAMS:
     suppress_output = False

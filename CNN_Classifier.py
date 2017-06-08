@@ -200,8 +200,9 @@ class CNN_Classifier:
         
         if remap is not None:
             for i,p in enumerate(predictions):
-                m = {}
-                r = m.get(p,p)
+                r = remap.get(p,p)
+                if self.debug:
+                    print(f'{p}->{r}')
                 if r != p:
                     predictions[i] = r
                     

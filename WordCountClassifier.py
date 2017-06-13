@@ -25,7 +25,7 @@ class WordCountClassifier(Classifier):
         self._tr = TweetRepresenter(self._vocab)
         self._save_as = save_as
         
-        restorable = os.path.exists(f'{saved_model}.index') and not retrain
+        restorable = os.path.exists(f'{saved_model}') and not retrain
 
         if restorable:
             with open(saved_model,'rb') as f:
@@ -47,7 +47,8 @@ class WordCountClassifier(Classifier):
         return self._train(ex_reps)
     
     def _train(self,ex_reps):  
-        assert len(ex_reps) == 2, 'only implemented binary classification'      
+        assert len(ex_reps) == 2, 'only implemented binary classification'    
+        
         for tweet in ex_reps[0]:
             for t in tweet:
                 self._clf[t] = self._clf.get(t,0) -1
@@ -121,19 +122,49 @@ class WordCountClassifier(Classifier):
 if __name__ == '__main__':
     clf = WordCountClassifier(retrain=True)
     datafolder = 'twitter-datasets'
-    train_neg = f'{datafolder}/train_neg.txt'
-    train_pos = f'{datafolder}/train_pos.txt'
+    train_neg = f'{datafolder}/train_neg_full.txt'
+    train_pos = f'{datafolder}/train_pos_full.txt'
+    cv_frac = 0.1
+    
+    examples = [train_neg,train_pos]
+    ex_reps = []
+    for i in range(len(examples)):
+        with open(examples[i],encoding='utf8') as fex:
+            tweets = fex.readlines()
+            ex_reps.append(clf._tr.represent(tweets))
+    
+    off0 = max([1,int(cv_frac * len(ex_reps[0]))])
+    off1 = max([1,int(cv_frac * len(ex_reps[0]))])
+    
+    ex_reps_test = [ex_reps[0][:off0], ex_reps[1][:off1]]
+    ex_reps_train = [ex_reps[0][off0:], ex_reps[1][off1:]]
     
     print("TRAINING")
-    clf.train(train_neg,train_pos)
+    
+    clf._train(ex_reps_train)
+    
+    print('training complete')
+    mp = -1
+    mpv = 0
+    mn = -1
+    mnv = 0
+    
+    for k in clf._clf.keys():
+        v = clf._clf.get(k)
+        if v > mpv:
+            mpv = v
+            mp = k
+        elif v < mnv:
+            mnv = v
+            mn = k    
+    
+    print('most positive:',mp)
+    print('most negative:',mn)
     
     print("TESTING")
     clf = WordCountClassifier()
-    acc = clf.test(train_neg,train_pos)
+    acc = clf._test(ex_reps_train)
     print(f'accuracy(training set) = {acc}')
     
-    train_neg = f'{datafolder}/train_neg_full.txt'
-    train_pos = f'{datafolder}/train_pos_full.txt'
-    
-    acc = clf.test(train_neg,train_pos)
+    acc = clf._test(ex_reps_test)
     print(f'accuracy(testing set) = {acc}')

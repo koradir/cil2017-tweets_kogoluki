@@ -4,19 +4,15 @@
 import tensorflow as tf
 import numpy as np
 import numpy.random as nprand
-
-try:
-   import cPickle as pickle
-except:
-   import pickle
    
 import os
 
 import PARAMS as par
 from statusbar import status_update
+from Classifier import Classifier
 from TweetRepresenter import TweetRepresenter
 
-class CNN_Classifier:
+class CNN_Classifier(Classifier):
     def __init__(self,
                  vocab='vocab.pkl',  # saved dictionary (word -> word number)
                  embeddings=None,
@@ -27,17 +23,11 @@ class CNN_Classifier:
                  PARAMS=par.CNN_BASE_PARAMS
                  ):
         
+        super().__init__(vocab)
+        
         self.PARAMS = PARAMS
         self.debug = debug
         self._save_as = save_as
-        
-        
-        """LOAD VOCABULARY"""
-        self._vocab = {}
-        with open(vocab,'rb') as f:
-            self._vocab = pickle.load(f)
-        if not self.PARAMS.suppress_output:
-            print("vocabulary loaded")
             
         self._tr = TweetRepresenter(self._vocab)
         

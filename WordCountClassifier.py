@@ -53,7 +53,7 @@ class WordCountClassifier(Classifier):
             for t in tweet:
                 self._clf[t] = self._clf.get(t,0) -1
                 
-        for tweet in ex_reps[0]:
+        for tweet in ex_reps[1]:
             for t in tweet:
                 self._clf[t] = self._clf.get(t,0) +1
                 

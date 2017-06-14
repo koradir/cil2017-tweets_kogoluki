@@ -1,16 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Jun 13 13:51:20 2017
 
-@author: koradir
-"""
-
-
-try:
-   import cPickle as pickle
-except:
-   import pickle
+import pickle
    
 
 class Classifier:

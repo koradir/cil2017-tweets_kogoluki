@@ -62,8 +62,8 @@ class NLTK_Classifier(Classifier):
         
     
     def _train(self,labelled_tweets):        
-        training_set = nltk.classify.util.apply_features(self._extract_freatures,labelled_tweets)
-        self._clf = nltk.NaiveBayesClassifier(training_set)
+        training_set = nltk.classify.apply_features(self._extract_freatures,labelled_tweets)
+        self._clf = nltk.NaiveBayesClassifier.train(training_set)
         
         with open(self._save_as,'wb') as fout:
             pickle.dump(self._clf,fout)

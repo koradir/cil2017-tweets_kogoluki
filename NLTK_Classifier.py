@@ -40,6 +40,7 @@ class NLTK_Classifier(Classifier):
         return self._train(ex_reps)
     
     def _train(self,ex_reps):
+        assert len(examples) == 2, 'only implemented binary classification'
         pass
     
     def test(self,*examples,encoding='utf8'):
@@ -56,6 +57,15 @@ class NLTK_Classifier(Classifier):
         return self._test(ex_reps)
     
     def _test(self,ex_reps):
+        assert len(examples) == 2, 'only implemented binary classification'
+        
+        labelled_tweets = [(tweet,-1) for tweet in ex_reps[0]]  # negative tweets
+        labelled_tweets.extend([(tweet,1) for tweet in ex_reps[1]])  # positive tweets
+        
+        def extract_features(tweet_rep):
+            features = {f'contains({t})' : False for t in self._vocab.}
+        
+        
         pass
     
     def predict(self,tweets,remap=None):

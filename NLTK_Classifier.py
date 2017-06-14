@@ -5,12 +5,16 @@ A classifier using the python Natural Language Toolkit (NLTK), based on
 http://www.laurentluce.com/posts/twitter-sentiment-analysis-using-python-and-nltk/
 """
 
+import os
+import pickle
 import nltk
 from Classifier import Classifier
-from TweetRepresenter import TweetRepresenter
 
 
 class NLTK_Classifier(Classifier):
+    
+    _MIN_TOKEN_LEN = 3
+    
     def __init__(self,
                  vocab='vocab.pkl',  # saved dictionary (word -> word number)
                  
@@ -19,57 +23,74 @@ class NLTK_Classifier(Classifier):
                  retrain = False
                  ):
         super().__init__(vocab)
-        self._tr = TweetRepresenter(self._vocab)
+        
+        self._word_list = [k for k in self._vocab.keys() if len(k) >= self._MIN_TOKEN_LEN]
         
         self._save_as = save_as
         
-        # TODO: check if classifier can be restored and restore if so
-        self._clf = None
+        restorable = os.path.exists(f'{saved_model}') and not retrain
+
+        if restorable:
+            with open(saved_model,'rb') as f:
+                self._clf = pickle.load(f)
+        else:
+            self._clf = None
+    
+    def _represent(self,tweets,sentiment=None):
+        if sentiment is not None:
+            return [([t.lower() for t in tweet.strip().split() if len(t) >= self._MIN_TOKEN_LEN],sentiment) for tweet in tweets]
+        else:
+            return [[t.lower() for t in tweet.strip().split() if len(t) >= self._MIN_TOKEN_LEN] for tweet in tweets]
+        
         
     def train(self,*examples,encoding='utf8'):
         assert len(examples) == 2, 'only implemented binary classification'
         
-        ex_reps = []
-        for i in range(len(examples)):
-            with open(examples[i],encoding=encoding) as fex:
-                tweets = fex.readlines()
-                ex_reps.append(self._tr.represent(tweets))
-                
-        assert len(ex_reps) == len(examples)
-        
-        return self._train(ex_reps)
+        tweets = []
+        with open(examples[0],'r',encoding=encoding) as fneg:
+            tweets.extend(self._represent(fneg.readlines(),'neg'))
+        with open(examples[1],'r',encoding=encoding) as fpos:
+            tweets.extend(self._represent(fpos.readlines(),'pos'))
+            
+        return self._train(tweets)
     
-    def _train(self,ex_reps):
-        assert len(examples) == 2, 'only implemented binary classification'
-        pass
+    def _extract_freatures(self,tweet):
+        features = {f'contains({t})' : False for t in self._word_list}
+        for t in tweet:
+            features[f'contains({t})'] = True
+        return features
+        
+    
+    def _train(self,labelled_tweets):        
+        training_set = nltk.classify.util.apply_features(self._extract_freatures,labelled_tweets)
+        self._clf = nltk.NaiveBayesClassifier(training_set)
+        
+        with open(self._save_as,'wb') as fout:
+            pickle.dump(self._clf,fout)
     
     def test(self,*examples,encoding='utf8'):
         assert len(examples) == 2, 'only implemented binary classification'
+        assert self._clf is not None, 'need to train first'
         
-        ex_reps = []
-        for i in range(len(examples)):
-            with open(examples[i],encoding=encoding) as fex:
-                tweets = fex.readlines()
-                ex_reps.append(self._tr.represent(tweets))
-                
-        assert len(ex_reps) == len(examples)
+        tweets = []
+        with open(examples[0],'r',encoding=encoding) as fneg:
+            tweets.extend(self._represent(fneg.readlines(),'neg'))
+        with open(examples[1],'r',encoding=encoding) as fpos:
+            tweets.extend(self._represent(fpos.readlines(),'pos'))
         
-        return self._test(ex_reps)
+        return self._test(tweets)
     
-    def _test(self,ex_reps):
-        assert len(examples) == 2, 'only implemented binary classification'
+    def _test(self,labelled_tweets):     
+        tweets,expectations = zip(*labelled_tweets)
+        predictions = self._predict(tweets)
         
-        labelled_tweets = [(tweet,-1) for tweet in ex_reps[0]]  # negative tweets
-        labelled_tweets.extend([(tweet,1) for tweet in ex_reps[1]])  # positive tweets
+        nof_corrects = sum(predictions == expectations)
+        nof_examples = len(tweets)
         
-        def extract_features(tweet_rep):
-            features = {f'contains({t})' : False for t in self._vocab.}
-        
-        
-        pass
+        return nof_corrects/nof_examples       
     
-    def predict(self,tweets,remap=None):
-        predictions = self._predict(self._tr.represent(tweets))
+    def predict(self,tweets,remap={'neg':-1,'pos':1}):
+        predictions = self._predict(self._represent(tweets))
         if remap is not None:
             for i,p in enumerate(predictions):
                 r = remap.get(p,p)
@@ -78,11 +99,12 @@ class NLTK_Classifier(Classifier):
                     
         return predictions
         
-    def _predict(self,tweet_reps):
-        return [self._prediction(t) for t in tweet_reps]
+    def _predict(self,tweets):
+        return [self._prediction(t) for t in tweets]
     
-    def _prediction(self,tweet_rep,epsilon=0):
-        pass
+    def _prediction(self,tweet_rep):
+        assert self._clf is not None, 'need to train first'
+        return self._clf.classify(self._extract_freatures(tweet_rep))
         
 if __name__ == '__main__':
     clf = NLTK_Classifier(retrain=True)
@@ -96,13 +118,16 @@ if __name__ == '__main__':
     for i in range(len(examples)):
         with open(examples[i],encoding='utf8') as fex:
             tweets = fex.readlines()
-            ex_reps.append(clf._tr.represent(tweets))
+            ex_reps.append(tweets)
     
     off0 = max([1,int(cv_frac * len(ex_reps[0]))])
     off1 = max([1,int(cv_frac * len(ex_reps[0]))])
     
-    ex_reps_test = [ex_reps[0][:off0], ex_reps[1][:off1]]
-    ex_reps_train = [ex_reps[0][off0:], ex_reps[1][off1:]]
+    ex_reps_test = clf._represent(ex_reps[0][:off0],'neg')
+    ex_reps_test.extend(clf._represent(ex_reps[1][:off1],'pos'))
+    
+    ex_reps_train = clf._represent(ex_reps[0][off0:],'neg')
+    ex_reps_train.extend(clf._represent(ex_reps[1][off1:],'pos'))
     
     print("TRAINING")
     

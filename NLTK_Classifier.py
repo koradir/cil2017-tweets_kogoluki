@@ -125,25 +125,25 @@ if __name__ == '__main__':
     off0 = max([1,int(cv_frac * len(ex_reps[0]))])
     off1 = max([1,int(cv_frac * len(ex_reps[0]))])
     
-#    ex_reps_test = clf._represent(ex_reps[0][:off0],'neg')
-#    ex_reps_test.extend(clf._represent(ex_reps[1][:off1],'pos'))
-#    
-#    ex_reps_train = clf._represent(ex_reps[0][off0:],'neg')
-#    ex_reps_train.extend(clf._represent(ex_reps[1][off1:],'pos'))
+    ex_reps_test = clf._represent(ex_reps[0][:off0],'neg')
+    ex_reps_test.extend(clf._represent(ex_reps[1][:off1],'pos'))
+    
+    ex_reps_train = clf._represent(ex_reps[0][off0:],'neg')
+    ex_reps_train.extend(clf._represent(ex_reps[1][off1:],'pos'))
 
-    # debug: only test with small sets
-    ex_reps_test = clf._represent(ex_reps[0][:200],'neg')
-    ex_reps_test.extend(clf._represent(ex_reps[1][:200],'pos'))
+#    # debug: only test with small sets
+#    ex_reps_test = clf._represent(ex_reps[0][:200],'neg')
+#    ex_reps_test.extend(clf._represent(ex_reps[1][:200],'pos'))
+#    
+#    ex_reps_train = clf._represent(ex_reps[0][200:700],'neg')
+#    ex_reps_train.extend(clf._represent(ex_reps[1][200:700],'pos'))
     
-    ex_reps_train = clf._represent(ex_reps[0][200:700],'neg')
-    ex_reps_train.extend(clf._represent(ex_reps[1][200:700],'pos'))
-    
-    
-    print("TRAINING")
-    s = timer()
-    clf._train(ex_reps_train)
-    e = timer()
-    print(f'training completed in {e-s}s')
+#    
+#    print("TRAINING")
+#    s = timer()
+#    clf._train(ex_reps_train)
+#    e = timer()
+#    print(f'training completed in {e-s}s')
     
     print("TESTING")
     clf = NLTK_Classifier()

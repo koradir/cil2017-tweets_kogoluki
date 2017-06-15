@@ -9,6 +9,7 @@ import os
 from timeit import default_timer as timer
 import pickle
 import nltk
+import numpy as np
 from Classifier import Classifier
 
 
@@ -85,7 +86,7 @@ class NLTK_Classifier(Classifier):
         tweets,expectations = zip(*labelled_tweets)
         predictions = self._predict(tweets)
         
-        nof_corrects = sum(predictions == expectations)
+        nof_corrects = np.sum([1 if a == b else 0 for a,b in zip(predictions,expectations)])
         nof_examples = len(tweets)
         
         return nof_corrects/nof_examples       

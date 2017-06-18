@@ -50,14 +50,26 @@ the paper. The four points that should be covered:
 
 \section{Introduction}\label{sec:introduction}
 
-\todoThis{Describe your problem and state your
-  contributions.}
+Sentiment analysis is the binary classification of user-committed text segments into positive and negative. Filtering the sentiment expressed by a single text segment has application (for example) in recommender systems, that either want to go beyond a point-based ranking system (e.g. \cite{hybrid_system_paper} ) or that get their text segments from sources that do not provide any point-based feedback (e.g. social media).
 
-bib-test:\\  
-  Glove paper: \cite{glove_paper}\\
-  NLTK blog: \cite{nltk_blog}\\
-  CNN paper: \cite{cnn_paper}\\
-  CNN baseline: \cite{cnn_base}
+
+Words, however, change their meaning based on the \textit{context}, in which they occur. For example, most any sentence can flip its sentiment from positive to negative or vice versa by the addition or omission of the word ``not''.
+
+To build one such analyser, we were provided a set of tweets and their classification. The tweets are first processed to build a vocabulary of some tens of thousands of known words. We explore some existing approaches for such an analyser before we present our own.
+
+In \autoref{sub:wordcount}, we first present a very simple baseline that ignores word contexts and instead grades words depending on their frequency in known negative or positive text segments.
+
+In \autoref{sub:nltk}, we then explore a bag-of-words baseline, using python's ``Natural Language Toolkit`` package. This approach suffers from huge training times as our vocabulary size is substantial, but it does provide better results than the word counting approach.
+
+Next, we turn to more sophisticated approaches.
+Global Vectors (``GloVe'', \cite{glove_paper}) are useful to get a context-sensitive embedding for the words. And in \autoref{sub:glove}, we explore that next.
+We will see that lacking a meaningful way to combine the word vectors into a sentence, that approach under-performs.
+
+Rather than trying to think of a clever way to combine the words vectors, the most efficient way to improve would be for the analyser to learn on its own how to weight and combine the word embeddings. For that reason, we explore a Convolutional Neural Network (CNN) approach in \autoref{sub:cnn} next. Since the CNN is also capable of learning the word embeddings, we choose a baseline that does not operate on pre-computed embeddings.
+
+Our own approach then tries to improve on the CNN approach by \todoThis{write what our approach does}. It is presented in more details in \autoref{sub:novel} and \todoThis{briefly mention the results from our approach}.
+
+\autoref{sec:results} summarises our findings which we then analyse in \autoref{sec:discussion}.
   
 \section{Models and Methods}\label{sec:models}
 \todoThis{The model refers to the underlying mathematical model or structure which 
@@ -82,6 +94,22 @@ structure the methods section:
   the paper, but explain the key steps.
 \end{enumerate}
 }
+\subsection{Word Counting}\label{sub:wordcount}
+\todo
+\subsection{Natural Language Tool Kit}\label{sub:nltk}
+NLTK blog: \cite{nltk_blog}\\
+\todo
+\subsection{GloVe}\label{sub:glove}
+Glove paper: \cite{glove_paper}\\
+\todo
+
+\subsection{Convolutional Neural Network}\label{sub:cnn}
+CNN paper: \cite{cnn_paper}\\
+CNN baseline implementation: \cite{cnn_base}\\
+\todo
+
+\subsection{Novel}\label{sub:novel}
+\todo
 
 \section{Results}\label{sec:results}
 \todoThis{Show evidence to support your claims made in the

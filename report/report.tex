@@ -1,0 +1,169 @@
+\documentclass[10pt,conference,compsocconf]{IEEEtran}
+
+\usepackage[super]{nth}
+\usepackage{url}
+\usepackage{graphicx}	% For figure environment
+\usepackage{xcolor}
+\usepackage{hyperref} %keep hyperref at the bottom of the usepackage list
+
+\newcommand{\todo}{\textcolor{red}{\textbf{!!TODO!!}}}
+\newcommand{\todoThis}[1]{\textcolor{red}{\textbf{!!TODO: #1}}}
+
+\begin{document}
+\title{ETHZ CIL 2017 : Tweet Sentiment Analysis}
+
+\author{
+  Roger Koradi\\
+  \texttt{koradir@ethz.ch}
+  \and
+  Luzi Sennhauser\\
+  \texttt{luzis@ethz.ch}
+  \and
+  Flavio Goldener\\
+  \texttt{gflavio@ethz.ch}
+  \and
+  Georg Kilzer\\
+  \texttt{gkilzer@ethz.ch}
+  %\\
+  %Department of Computer Science, ETH Zurich, Switzerland
+}
+
+\maketitle
+
+%\begin{figure}[htbp]
+%  \centering
+%  \includegraphics[width=\columnwidth]{local_wdenoised_1d}
+%  \caption{Signal compression and denoising using the Daubechies wavelet basis.}
+%  \label{fig:denoise-wavelet}
+%\end{figure}
+
+\begin{abstract}
+\todoThis{The abstract should really be written last, along with the title of
+the paper. The four points that should be covered:
+\begin{enumerate}
+\item State the problem.
+\item Say why it is an interesting problem.
+\item Say what your solution achieves.
+\item Say what follows from your solution.
+\end{enumerate}}
+\end{abstract}
+
+\section{Introduction}\label{sec:introduction}
+
+\todoThis{Describe your problem and state your
+  contributions.}
+
+bib-test:\\  
+  Glove paper: \cite{glove_paper}\\
+  NLTK blog: \cite{nltk_blog}\\
+  CNN paper: \cite{cnn_paper}\\
+  CNN baseline: \cite{cnn_base}
+  
+\section{Models and Methods}\label{sec:models}
+\todoThis{The model refers to the underlying mathematical model or structure which 
+you use to describe your problem, or that your solution is based on. 
+The methods on the other hand, are the algorithms used to solve the problem. \\\\Describe your idea and how it was implemented to solve
+  the problem. Survey the related work, giving credit where credit is
+  due.\\\\It is usually helpful to
+structure the methods section:
+\begin{enumerate}
+\item Layout the model you used to describe the problem or the solution.
+\item Describing the algorithms used in the study, briefly including
+  details such as hyperparameter values (e.g. thresholds), and
+  preprocessing steps (e.g. normalizing the data to have mean value of
+  zero).
+\item Explaining how the materials were prepared, for example the
+  images used and their resolution.
+\item Describing the research protocol, for example which examples
+  were used for estimating the parameters (training) and which were
+  used for computing performance.
+\item Explaining how measurements were made and what
+  calculations were performed. Do not reproduce the full source code in
+  the paper, but explain the key steps.
+\end{enumerate}
+}
+
+\section{Results}\label{sec:results}
+\todoThis{Show evidence to support your claims made in the
+  introduction.}
+  
+\section{Discussion}\label{sec:discussion}
+\todoThis{Discuss the strengths and weaknesses of your
+  approach, based on the results. Point out the implications of your
+  novel idea on the application concerned.}
+  
+\todoThis{You compare your novel algorithm to \emph{at least two baseline
+  algorithms}. For the baselines, you can use the implementations you
+developed as part of the programming assignments.\\}
+  
+\section{Summary}\label{sec:summary}
+\todoThis{Summarize your contributions in light of the new
+  results.}
+
+\section*{Acknowledgements}
+\todo
+
+or remove section if none
+
+\bibliographystyle{IEEEtran}
+\bibliography{report}
+\section{(DELETE before submission)}
+\todoThis{Remove this section before submission}\\
+
+Your semester project is a group effort. It consists of four parts:
+\begin{enumerate}
+\item The programming assignments you solve during the semester.
+\item Developing a novel solution for one of the assignments, e.g. by
+  combining methods from previous programming assignments into a novel
+  solution.
+\item Comparing your novel solution to previous assignments.
+\item Writing up your findings in a short scientific paper.
+\end{enumerate}
+
+There are two different types of grading criteria applied to your
+project, with the corresponding weights shown in brackets.
+\begin{description}
+\item[Competitive] \ \\
+  The following criteria is scored based on your rank
+  in comparison with the rest of the class.
+  \begin{itemize}
+  \item time taken for computation (10\%)
+  \item average rank for all other criteria relevant to the task, for
+    example reconstruction error and sparsity (20\%)
+  \end{itemize}
+  The ranks will then be converted on a linear scale into a grade
+  between 4 and 6.
+\item[Non-competitive] \ \\
+  The following criteria is scored based on an
+  evaluation by the teaching assistants.
+  \begin{itemize}
+  \item quality of paper (30\%)
+  \item quality of implementation (20\%)
+  \item creativity of solution (20\%)
+  \end{itemize}
+\end{description}
+
+\textcolor{red}{The document should be a maximum of {\bf 4 pages}.}\\
+
+As for code...
+\begin{itemize}
+\item Have a \texttt{README} file that (at least) describes what your
+  software does, and which commands to run to obtain results. Also
+  mention anything special that needs to be set up, such as
+  toolboxes\footnote{For those who are
+  particularly interested, other common structures can be found at
+  \url{http://en.wikipedia.org/wiki/README} and
+  \url{http://www.gnu.org/software/womb/gnits/}.}.
+\item A list of authors and contributors can be included in a file
+  called \texttt{AUTHORS}, acknowledging any help that you may have
+  obtained. For small projects, this information is often also
+  included in the \texttt{README}.
+\item Use meaningful filenames, and not \texttt{temp1.m},
+  \texttt{temp2.m}. The code should also unzip into a subdirectory.
+\item Document your code. Each file should at least have a short
+  description about its reason for existence. Non obvious steps in the
+  code should be commented.
+\item Describe how the results presented in your paper can potentially
+  be reproduced.
+\end{itemize}
+\end{document}

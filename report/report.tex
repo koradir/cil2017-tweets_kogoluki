@@ -72,41 +72,33 @@ Our own approach then tries to improve on the CNN approach by \todoThis{write wh
 \autoref{sec:results} summarises our findings which we then analyse in \autoref{sec:discussion}.
   
 \section{Models and Methods}\label{sec:models}
-\todoThis{The model refers to the underlying mathematical model or structure which 
-you use to describe your problem, or that your solution is based on. 
-The methods on the other hand, are the algorithms used to solve the problem. \\\\Describe your idea and how it was implemented to solve
-  the problem. Survey the related work, giving credit where credit is
-  due.\\\\It is usually helpful to
-structure the methods section:
-\begin{enumerate}
-\item Layout the model you used to describe the problem or the solution.
-\item Describing the algorithms used in the study, briefly including
-  details such as hyperparameter values (e.g. thresholds), and
-  preprocessing steps (e.g. normalizing the data to have mean value of
-  zero).
-\item Explaining how the materials were prepared, for example the
-  images used and their resolution.
-\item Describing the research protocol, for example which examples
-  were used for estimating the parameters (training) and which were
-  used for computing performance.
-\item Explaining how measurements were made and what
-  calculations were performed. Do not reproduce the full source code in
-  the paper, but explain the key steps.
-\end{enumerate}
-}
+In all models, we were given a training set of tweets labelled either ``positive'' or ``negative''.
+We set some of them aside for testing, then trained on the remaining.
+
 \subsection{Word Counting}\label{sub:wordcount}
-\todo
+The simplest model is to ignore the context in which words occur completely. In such a model, each word by itself is either positively or negatively connoted.
+
+A word's connotation $c = p - n$ is the number $p$ of its occurrences in ``positively'' classified training tweets minus the number $n$ of its occurrences $n$ in ``negatively'' classified training tweets. A word that is frequent in both positive and negative tweets therefore bears less weight than words that are (almost) exclusively used in ``positive'' tweets, or ``negative'' tweets.
+
+The sentiment expressed by a tweet is then the sum of all its words' connotations.
+
 \subsection{Natural Language Tool Kit}\label{sub:nltk}
-NLTK blog: \cite{nltk_blog}\\
-\todo
+The NLTK is - to quote its documentation - ``a leading platform for building Python programs to work with human language data. It provides [...] a suite of text processing libraries for classification, tokenization, stemming, tagging, parsing, and semantic reasoning, wrappers for industrial-strength NLP libraries''. This approach suggested by \cite{nltk_blog} tries to forgo the need for explicit word embeddings by using a classifier provided by the NLTK. That classifier takes as input labelled tweets and a ``feature extractor'' method. Following the example of \cite{nltk_blog}, the feature extractor tells the classifier what words are in the tweet but - different from the approach in \autoref{sub:wordcount} - also, which words are \textit{not} in the tweet. It does not, however, take into account the order in which the words in the tweet occur.
+
+Similar to \autoref{sub:wordcount}, the \texttt{NaiveBayesClassifier}\footnote{\url{http://www.nltk.org/_modules/nltk/classify/naivebayes.html}} takes into account the relative frequency at which a given feature (``word in tweet'' / ``word not in tweet'') appears in either class and weights its contribution to the classification accordingly, whereas its contribution relies on its frequency over all tweets.
 \subsection{GloVe}\label{sub:glove}
-Glove paper: \cite{glove_paper}\\
-\todo
+\autoref{sub:nltk} describes an approach that somewhat takes the context of a word into account by looking at what other words occur in the same sentence. The Global Vector (GloVe) model outlined in \cite{glove_paper} tries the same in a more sophisticated way, abstracting the natural language into context-sensitive word vectors, creating a vector space with ```meaningful substructure'' \cite{glove_paper}, in that frequently co-occurring are close in terms of euclidean distance.
+
+Remains the question of how these word embeddings can be combined to get a meaningful representation of a sentence. We will see in \autoref{sec:discussion}, that the naive approach - simply averaging over the words present in the sentence - does not yield the best possible results because it (wrongly) assumes that ``positive'' and ``negative'' words are somewhat clearly separable in the vector space GloVe constructs.
 
 \subsection{Convolutional Neural Network}\label{sub:cnn}
-CNN paper: \cite{cnn_paper}\\
-CNN baseline implementation: \cite{cnn_base}\\
-\todo
+Given some word embeddings, there are many ways in which they can be combined, not all of which result in meaningful representations of the original sentence.
+
+The simplest way to determine how to combine the embeddings is by letting the algorithm decide on its own. This is the approach suggested by \cite{cnn_paper}, which uses a convolutional neural network (CNN) to learn the embeddings themselves, extracts features from it and then learns  how to use these extracted features to classify the tweets correctly.
+
+The paper suggests using convolution and max-over-time pooling to extract a single feature per filter and for different $n$-gram sizes. These extracted features are then concatenated and fed to some fully-connected layer(s) and from there to a softmax for classification.
+
+For our baseline, we have adapted Grattarola's implementation \cite{cnn_base} to conform to our format.
 
 \subsection{Novel}\label{sub:novel}
 \todo
@@ -123,6 +115,8 @@ CNN baseline implementation: \cite{cnn_base}\\
 \todoThis{You compare your novel algorithm to \emph{at least two baseline
   algorithms}. For the baselines, you can use the implementations you
 developed as part of the programming assignments.\\}
+
+\todoThis{explain why averaging the glove vectors does not work (positive/negative words not clearly separated)}
   
 \section{Summary}\label{sec:summary}
 \todoThis{Summarize your contributions in light of the new

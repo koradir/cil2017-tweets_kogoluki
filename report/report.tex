@@ -30,13 +30,6 @@
 
 \maketitle
 
-%\begin{figure}[htbp]
-%  \centering
-%  \includegraphics[width=\columnwidth]{local_wdenoised_1d}
-%  \caption{Signal compression and denoising using the Daubechies wavelet basis.}
-%  \label{fig:denoise-wavelet}
-%\end{figure}
-
 \begin{abstract}
 \todoThis{The abstract should really be written last, along with the title of
 the paper. The four points that should be covered:
@@ -108,6 +101,25 @@ For our baseline, we have adapted Grattarola's implementation \cite{cnn_base} to
   introduction.}
   
 \section{Discussion}\label{sec:discussion}
+The ``word counting'' approach outlined in \autoref{sub:wordcount} is simple in both concept and implementation and yields predictions of agreeable accuracy. It doesn't go beyond ``agreeable'' because it cares absolutely nothing about the context in which words occur.
+
+The NLTK approach outlined in \autoref{sub:nltk} tries to look at words in a more global context and yields better results than the word counting approach because of that. The NLTK also has the ``benefit'' that it does not require any abstraction of the words and instead works - as its name implies - with natural language. This does, however, come back to bite it when working with natural language means a more cumbersome definition of features (a mapping from words to booleans, indicating for each word if or not it is contained in the tweet). This scales incredibly badly with the size of the vocabulary. Training with 180'000 tweets and a 20'000 something words dictionary took over $40$ hours and training with all the approximately 170'000 words in the English language\footnote{\url{https://en.oxforddictionaries.com/explore/how-many-words-are-there-in-the-english-language}} or with a huge significantly larger amount of tweets would take a prohibitively long time. This strongly suggests that rather than working with natural language, we are better set abstracting the tweets.
+
+GloVe may be an elegant way to abstract \textit{words} into context-sensitive vectors, but it groups ``similar'' words together, rather than divide them into positive and negative. This makes combining the vectors for our sentiment analysis a tad tricky. Ideally, we would want to combine them in such a way that the resulting tweet vector representations are clearly separable into positive and negative tweets. To verify that simple averaging does not suffice, we compute for each tweet a representation by averaging over all its words' GloVe embeddings, then perform PCA to dimension-reduce it to a 2D space and plot it. As we can see in the resulting \autoref{fig:glove-embeddings}, the overlap of representations from tweets labelled ``positive'' and from tweets labelled ``negative'' is substantial, making clear classification very hard.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\columnwidth]{imgs/glove_plot.png}
+  \caption{Spread of tweets when representing them as the average over all their words' GloVe embeddings.}
+  \label{fig:glove-embeddings}
+\end{figure}
+
+If we could come up with a way to aggregate the word vectors in such a way that the positive and negative tweets are clearly separable, we would be done. Unfortunately, coming up with one such way is far from trivial.
+
+Much easier is to have a program \textit{learn} on itself what the embeddings should be and how they need be interpreted to allow the best predictions. This is where the convolutional neural network from \autoref{sub:cnn} comes into play. Although it is a bit trickier to implement, training is really easy, amounting to little more than throwing tweets at it, and the results are remarkable.
+
+\todoThis{Add stuff about our novel idea.}
+
 \todoThis{Discuss the strengths and weaknesses of your
   approach, based on the results. Point out the implications of your
   novel idea on the application concerned.}
@@ -115,8 +127,6 @@ For our baseline, we have adapted Grattarola's implementation \cite{cnn_base} to
 \todoThis{You compare your novel algorithm to \emph{at least two baseline
   algorithms}. For the baselines, you can use the implementations you
 developed as part of the programming assignments.\\}
-
-\todoThis{explain why averaging the glove vectors does not work (positive/negative words not clearly separated)}
   
 \section{Summary}\label{sec:summary}
 \todoThis{Summarize your contributions in light of the new
